@@ -1,5 +1,6 @@
 export interface RPLCConfig {
         name: string;
+        memory: number;
         hal: {
                 flash_ex?: boolean;
                 io?: boolean;
@@ -27,6 +28,7 @@ export interface RPLCConfig {
 export const RPLCs: RPLCConfig[] = [
         {
                 name: "RPLC_XL",
+                memory: 2048,
                 hal: {
                         flash_ex: true,
                         io: true,
@@ -50,6 +52,7 @@ export const RPLCs: RPLCConfig[] = [
         },
         {
                 name: "RPLC_L",
+                memory: 1024,
                 hal: {
                         flash_ex: true,
                         io: true,
@@ -71,6 +74,7 @@ export const RPLCs: RPLCConfig[] = [
         },
         {
                 name: "RPLC_M",
+                memory: 512,
                 hal: {
                         serial: true,
                         speaker: true,

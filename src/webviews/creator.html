@@ -1,26 +1,263 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creator</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>RPLC Configurator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .preset-selector {
+            width: 250px;
+        }
+
+        .preset-view {
+            flex-grow: 1;
+            border: 1px solid var(--vscode-input-border);
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        select,
+        button {
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            width: 100%;
+            background-color: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border);
+        }
+
+        button {
+            cursor: pointer;
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+        }
+
+        button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+
+        .config-option {
+            margin-bottom: 15px;
+        }
+
+        .config-option label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .preset-item {
+            cursor: pointer;
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+        }
+
+        .preset-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        [onclick], .clickable {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
-        <h1>Creator</h1>
-        <label for="RPLC_List">Choose a RPLC:</label>
-        <select id="RPLC_List" name="RPLC_List">
-            <option value="RPLC_M">RPLC_M</option>
-            <option value="RPLC_L">RPLC_L</option>
-            <option value="RPLC_XL">RPLC_XL</option>
-        </select>
-        <div id="output"></div>
+        <div class="preset-selector">
+            <h2>Select RPLC Model</h2>
+            <select id="RPLC_List">
+                <option value="">-- Select --</option>
+                <!-- Опции будут добавлены через JS -->
+            </select>
+
+            <div id="dynamicOptions">
+                <!-- Динамические опции конфигурации -->
+            </div>
+
+            <button id="saveButton">Save Configuration</button>
+        </div>
+
+        <div class="preset-view" id="presetView">
+            <h2>Configuration Preview</h2>
+            <div id="presetContent">
+                <p>Please select an RPLC model</p>
+            </div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        // Заполняем список доступных RPLC
+        function populateRPLCList(presets) {
+            const select = document.getElementById('RPLC_List');
+            select.innerHTML = '<option value="">-- Select --</option>';
+            presets.forEach(preset => {
+                const option = document.createElement('option');
+                option.value = preset.name;
+                option.textContent = preset.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Обработчик изменения выбора
+        document.getElementById('RPLC_List').addEventListener('change', (event) => {
+            const selectedValue = event.target.value;
+            vscode.postMessage({
+                command: 'rplcListChanged',
+                value: selectedValue
+            });
+        });
+
+        // Обработчик сохранения конфигурации
+        document.getElementById('saveButton').addEventListener('click', () => {
+            const config = gatherConfiguration();
+            vscode.postMessage({
+                command: 'saveConfig',
+                config: config
+            });
+        });
+
+        // Собираем текущую конфигурацию
+        function gatherConfiguration() {
+            const selectedRPLC = document.getElementById('RPLC_List').value;
+            const config = {
+                model: selectedRPLC,
+                options: {}
+            };
+
+            // Собираем значения всех динамических опций
+            document.querySelectorAll('#dynamicOptions input, #dynamicOptions select').forEach(input => {
+                config.options[input.id] = input.value;
+            });
+
+            return config;
+        }
+
+        // Обновляем отображение пресета
+        function updatePresetDisplay(preset) {
+            const presetContent = document.getElementById('presetContent');
+            
+            // Функция для определения типа и создания соответствующего элемента
+            const createInputForValue = (key, value) => {
+                const type = typeof value;
+                
+                if (type === 'boolean') {
+                    return `
+                        <select class="config-input" data-key="${key}">
+                            <option value="true" ${value === true ? 'selected' : ''}>true</option>
+                            <option value="false" ${value === false ? 'selected' : ''}>false</option>
+                        </select>
+                    `;
+                } else {
+                    return `<input type="text" class="config-input" data-key="${key}" value="${value}">`;
+                }
+            };
+
+            // Функция для рекурсивного создания элементов конфигурации
+            const createConfigControls = (config, prefix = '') => {
+                let controls = '';
+                
+                for (const [key, value] of Object.entries(config)) {
+                    const fullKey = prefix ? `${prefix}.${key}` : key;
+                    
+                    if (value !== null && typeof value === 'object') {
+                        controls += `
+                            <div class="config-group">
+                                <h4>${key}</h4>
+                                ${createConfigControls(value, fullKey)}
+                            </div>
+                        `;
+                    } else {
+                        controls += `
+                            <div class="config-item">
+                                <label>${key}:</label>
+                                ${createInputForValue(fullKey, value)}
+                            </div>
+                        `;
+                    }
+                }
+                
+                return controls;
+            };
+
+            let html = `
+                <div class="preset">
+                    <h3>${preset.name}</h3>
+                    <p><strong>CPU:</strong> ${preset.cpu}</p>
+                    <p><strong>Memory:</strong> ${preset.memory} KB</p>
+                    
+                    <div class="config-section">
+                        <h4>Configuration</h4>
+                        ${createConfigControls(preset)}
+                    </div>
+                    
+                    <button class="save-btn">Save Changes</button>
+                </div>
+            `;
+
+            presetContent.innerHTML = html;
+            
+            // Добавляем обработчик сохранения
+            presetContent.querySelector('.save-btn').addEventListener('click', () => {
+                const inputs = presetContent.querySelectorAll('.config-input');
+                const updatedConfig = {...preset};
+                
+                inputs.forEach(input => {
+                    const keys = input.dataset.key.split('.');
+                    let current = updatedConfig;
+                    
+                    for (let i = 0; i < keys.length - 1; i++) {
+                        current = current[keys[i]];
+                    }
+                    
+                    const lastKey = keys[keys.length - 1];
+                    current[lastKey] = input.type === 'select-one' 
+                        ? input.value === 'true' 
+                        : typeof current[lastKey] === 'number' 
+                            ? Number(input.value) 
+                            : input.value;
+                });
+                
+                console.log('Updated config:', updatedConfig);
+                // Здесь можно добавить логику сохранения изменений
+            });
+        }
+
+        // Обновляем представление при получении новых данных
+        window.addEventListener('message', event => {
+            const message = event.data;
+
+            switch (message.command) {
+                case 'initialize':
+                    populateRPLCList(message.presets);
+                    break;
+
+                case 'updatePresetView':
+                    updatePresetDisplay(message.preset);
+                    // updateDynamicOptions(message.preset);
+                    break;
+            }
+        });
+
+        // Запрашиваем начальные данные при загрузке
+        vscode.postMessage({ command: 'getInitialData' });
+    </script>
 </body>
 
 </html>

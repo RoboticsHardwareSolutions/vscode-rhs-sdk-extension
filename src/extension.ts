@@ -37,6 +37,12 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
         }
     );
 
+    // panel.webview.html = getWebviewContent(context, panel);
+    panel.webview.postMessage({
+        command: 'initialize',
+        presets: RPLCs
+    });
+
     openPanels[pageName] = panel;
 
     panel.onDidDispose(() => {
@@ -48,10 +54,17 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
             switch (message.command) {
                 case 'rplcListChanged':
                     vscode.window.showInformationMessage(`Selected value: ${message.value}`);
-                    panel.webview.postMessage({
-                        command: 'RPLC_Presets',
-                        presets: RPLCs.find(rplc => rplc.name === message.value)
-                    });
+                    const preset = RPLCs.find(rplc => rplc.name === message.value);
+                    if (preset) {
+                        panel.webview.postMessage({
+                            command: 'updatePresetView',
+                            preset: preset
+                        });
+                    }
+                    break;
+                case 'saveConfig':
+                    // Обработка сохранения конфигурации
+                    // saveConfiguration(message.config);
                     break;
             }
         },
@@ -73,7 +86,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
             return;
         }
 
-        const resourcePath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'webviews'));
+        // const resourcePath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'webviews'));
 
         content = content.replace(/(src|href)="([^"]*)"/g, (match, p1, p2) => {
             return `${p1}="${panel.webview.asWebviewUri(vscode.Uri.file(path.join(context.extensionPath, 'src', 'webviews'
@@ -105,11 +118,6 @@ class ToolsProvider implements vscode.TreeDataProvider<ToolItem> {
                     command: 'rhs-sdk.tools.open',
                     title: '',
                     arguments: ['editor']
-                }),
-                new ToolItem('Logger', 'logger', {
-                    command: 'rhs-sdk.tools.open',
-                    title: '',
-                    arguments: ['logger']
                 })
             ]);
         }

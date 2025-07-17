@@ -30,11 +30,6 @@
         "command": "rhs-sdk.tools.editor",
         "title": "Open Page 1",
         "icon": "$(symbol-string)"
-      },
-      {
-        "command": "rhs-sdk.tools.logger",
-        "title": "Open Page 1",
-        "icon": "$(symbol-string)"
       }
     ],
     "viewsContainers": {
