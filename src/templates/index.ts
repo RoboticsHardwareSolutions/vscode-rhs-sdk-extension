@@ -15,7 +15,7 @@ export const templates: Record<string, RPLCConfig> = {
     RPLC_XL: loadTemplate('rplc_xl.json'),
     RPLC_L: loadTemplate('rplc_l.json'),
     RPLC_M: loadTemplate('rplc_m.json'),
-    TEMPLATE: loadTemplate('rplc_template.json')
+    RPLC_TEMPLATE: loadTemplate('rplc_template.json')
 };
 
 export const templateNames = Object.keys(templates);
@@ -44,7 +44,7 @@ export function createConfigFromTemplate(templateName: string, customName?: stri
 export function createFullConfig(name: string, memory: number = 512): RPLCConfig {
     // Создает полную конфигурацию на основе общего шаблона со всеми возможными функциями
     // Пользователь может включить нужные (true) и удалить ненужные поля из JSON
-    const template = getTemplate('TEMPLATE');
+    const template = getTemplate('RPLC_TEMPLATE');
     if (!template) {
         throw new Error('Base template not found');
     }

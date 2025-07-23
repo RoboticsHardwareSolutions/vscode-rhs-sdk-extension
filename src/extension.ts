@@ -1,7 +1,11 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { templates, getTemplate, createFullConfig } from './templates';
+
+const execAsync = promisify(exec);
 
 export function activate(context: vscode.ExtensionContext) {
     const view = vscode.window.createTreeView('rhs-sdk.tools', {
@@ -50,7 +54,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
     });
 
     panel.webview.onDidReceiveMessage(
-        message => {
+        async message => {
             switch (message.command) {
                 case 'rplcListChanged':
                     vscode.window.showInformationMessage(`Selected value: ${message.value}`);
@@ -63,18 +67,26 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
                     }
                     break;
                 case 'createNewConfig':
-                    vscode.window.showInformationMessage(`Creating new config: ${message.name}`);
-                    try {
-                        const newConfig = createFullConfig(message.name, message.memory);
-                        panel.webview.postMessage({
-                            command: 'updatePresetView',
-                            preset: newConfig
-                        });
-                    } catch (error) {
-                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-                        vscode.window.showErrorMessage(`Error creating config: ${errorMessage}`);
-                    }
-                    break;
+					try {
+						const fullConfig = createFullConfig(message.name || 'MY_CUSTOM_RPLC', message.memory || 512);
+						panel.webview.postMessage({
+							command: 'updatePresetView',
+							preset: fullConfig
+						});
+					} catch (error) {
+						console.error('Error creating new config:', error);
+						vscode.window.showErrorMessage('Ошибка при создании нового конфига');
+					}
+					break;
+
+				case 'saveConfigToRepo':
+					try {
+						await saveConfigToRepository(message.config);
+					} catch (error) {
+						console.error('Error saving config to repository:', error);
+						vscode.window.showErrorMessage('Ошибка при сохранении конфига в репозиторий');
+					}
+					break;
                 case 'saveConfig':
                     // Обработка сохранения конфигурации
                     // saveConfiguration(message.config);
@@ -108,6 +120,62 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 
         panel.webview.html = content;
     });
+}
+
+async function saveConfigToRepository(config: any) {
+    const repoUrl = 'https://github.com/RoboticsHardwareSolutions/RPLC_Quick_Project.git';
+    
+    // Показываем диалог для выбора папки
+    const folderUri = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        openLabel: 'Выберите папку для клонирования проекта'
+    });
+
+    if (!folderUri || folderUri.length === 0) {
+        return;
+    }
+
+    const targetPath = folderUri[0].fsPath;
+    const projectName = 'RPLC_Quick_Project';
+    const projectPath = path.join(targetPath, projectName);
+
+    try {
+        // Показываем прогресс
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: "Клонирование репозитория и сохранение конфигурации",
+            cancellable: false
+        }, async (progress) => {
+            progress.report({ message: "Клонирование репозитория..." });
+            
+            // Клонируем репозиторий
+            await execAsync(`git clone --recursive ${repoUrl}`, { cwd: targetPath });
+            
+            progress.report({ message: "Сохранение конфигурации..." });
+            
+            // Сохраняем конфигурацию в файл
+            const configFilePath = path.join(projectPath, 'rplc_config.json');
+            fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2));
+            
+            progress.report({ message: "Готово!" });
+        });
+
+        // Предлагаем открыть папку проекта
+        const choice = await vscode.window.showInformationMessage(
+            'Проект успешно создан! Открыть папку проекта?',
+            'Открыть', 'Отмена'
+        );
+
+        if (choice === 'Открыть') {
+            await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(projectPath), true);
+        }
+
+    } catch (error) {
+        console.error('Error cloning repository or saving config:', error);
+        vscode.window.showErrorMessage(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
 }
 
 class ToolsProvider implements vscode.TreeDataProvider<ToolItem> {
