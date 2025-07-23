@@ -1,5 +1,5 @@
 {
-    "name": "RPLC_M",
+    "name": "BMPLC_M",
     "memory": 512,
     "hal": {
         "serial": true,
@@ -15,5 +15,5 @@
     "tests": {
         "memmng": true
     },
-    "compileDefinition": "RPLC_M"
+    "compileDefinition": "BMPLC_M"
 }

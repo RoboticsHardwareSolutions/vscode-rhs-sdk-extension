@@ -1,34 +1,34 @@
-import { RPLCConfig } from '../webviews/config_presets';
+import { BMPLCConfig } from '../webviews/config_presets';
 import * as fs from 'fs';
 import * as path from 'path';
 
 // In runtime __dirname points to dist/, and files are in dist/templates/
 const templatesDir = path.join(__dirname, 'templates');
 
-function loadTemplate(filename: string): RPLCConfig {
+function loadTemplate(filename: string): BMPLCConfig {
     const filePath = path.join(templatesDir, filename);
     const content = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(content) as RPLCConfig;
+    return JSON.parse(content) as BMPLCConfig;
 }
 
-export const templates: Record<string, RPLCConfig> = {
-    RPLC_XL: loadTemplate('rplc_xl.json'),
-    RPLC_L: loadTemplate('rplc_l.json'),
-    RPLC_M: loadTemplate('rplc_m.json'),
-    RPLC_TEMPLATE: loadTemplate('rplc_template.json')
+export const templates: Record<string, BMPLCConfig> = {
+    BMPLC_XL: loadTemplate('bmplc_xl.json'),
+    BMPLC_L: loadTemplate('bmplc_l.json'),
+    BMPLC_M: loadTemplate('bmplc_m.json'),
+    BMPLC_TEMPLATE: loadTemplate('bmplc_template.json')
 };
 
 export const templateNames = Object.keys(templates);
 
-export function getTemplate(name: string): RPLCConfig | undefined {
+export function getTemplate(name: string): BMPLCConfig | undefined {
     return templates[name];
 }
 
-export function getAllTemplates(): Record<string, RPLCConfig> {
+export function getAllTemplates(): Record<string, BMPLCConfig> {
     return templates;
 }
 
-export function createConfigFromTemplate(templateName: string, customName?: string): RPLCConfig {
+export function createConfigFromTemplate(templateName: string, customName?: string): BMPLCConfig {
     const template = getTemplate(templateName);
     if (!template) {
         throw new Error(`Template ${templateName} not found`);
@@ -41,10 +41,10 @@ export function createConfigFromTemplate(templateName: string, customName?: stri
     };
 }
 
-export function createFullConfig(name: string, memory: number = 512): RPLCConfig {
+export function createFullConfig(name: string, memory: number = 512): BMPLCConfig {
     // Creates full configuration based on general template with all possible functions
     // User can enable needed ones (true) and remove unnecessary fields from JSON
-    const template = getTemplate('RPLC_TEMPLATE');
+    const template = getTemplate('BMPLC_TEMPLATE');
     if (!template) {
         throw new Error('Base template not found');
     }
@@ -57,7 +57,7 @@ export function createFullConfig(name: string, memory: number = 512): RPLCConfig
     };
 }
 
-export function mergeConfigWithTemplate(baseTemplate: string, overrides: Partial<RPLCConfig>): RPLCConfig {
+export function mergeConfigWithTemplate(baseTemplate: string, overrides: Partial<BMPLCConfig>): BMPLCConfig {
     const template = getTemplate(baseTemplate);
     if (!template) {
         throw new Error(`Template ${baseTemplate} not found`);

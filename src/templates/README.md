@@ -1,27 +1,27 @@
-# RPLC Configuration Templates
+# BMPLC Configuration Templates
 
-This directory contains JSON templates for various RPLC (Robotics PLC) configurations.
+This directory contains JSON templates for various BMPLC (BareMetal PLC) configurations.
 
 ## Template Types
 
 ### 1. Ready-to-use configurations (Compact Templates)
 - **Principle:** Contains only enabled fields (`true`)
 - **Purpose:** Ready-to-use configurations
-- **Files:** `rplc_xl.json`, `rplc_l.json`, `rplc_m.json`
+- **Files:** `bmplc_xl.json`, `bmplc_l.json`, `bmplc_m.json`
 
 ### 2. Full template for customization (Full Template)
 - **Principle:** Contains all possible fields with their values
 - **Purpose:** Base for creating custom configurations
-- **Files:** `rplc_template.json`
+- **Files:** `bmplc_template.json`
 
 ## File Structure
 
-- `rplc_xl.json` - Ready RPLC XL configuration (2048 KB) - only active components
-- `rplc_l.json` - Ready RPLC L configuration (1024 KB) - only active components  
-- `rplc_m.json` - Ready RPLC M configuration (512 KB) - only active components
-- `rplc_template.json` - **Full template** with all possible fields for customization
+- `bmplc_xl.json` - Ready BMPLC XL configuration (2048 KB) - only active components
+- `bmplc_l.json` - Ready BMPLC L configuration (1024 KB) - only active components  
+- `bmplc_m.json` - Ready BMPLC M configuration (512 KB) - only active components
+- `bmplc_template.json` - **Full template** with all possible fields for customization
 - `index.ts` - TypeScript module for working with templates
-- `rplc-config.schema.json` - JSON Schema for validation
+- `bmplc-config.schema.json` - JSON Schema for validation
 
 ## Usage
 
@@ -37,23 +37,23 @@ import {
 } from './templates';
 
 // 1. Get ready-to-use configuration (compact)
-const xlConfig = getTemplate('RPLC_XL'); 
+const xlConfig = getTemplate('BMPLC_XL'); 
 
 // 2. Get full template for customization
-const fullTemplate = getTemplate('RPLC_TEMPLATE'); 
+const fullTemplate = getTemplate('BMPLC_TEMPLATE'); 
 
 // 3. Create copy of ready configuration with new name
-const myXLConfig = createConfigFromTemplate('RPLC_XL', 'MY_CUSTOM_XL');
+const myXLConfig = createConfigFromTemplate('BMPLC_XL', 'MY_CUSTOM_XL');
 
 // 4. Create new config with full set of functions for customization
-const customConfig = createFullConfig('MY_CUSTOM_RPLC', 1024);
+const customConfig = createFullConfig('MY_CUSTOM_BMPLC', 1024);
 // After this user manually edits JSON
 
 // 5. Modify existing template
-const modifiedConfig = mergeConfigWithTemplate('RPLC_L', {
+const modifiedConfig = mergeConfigWithTemplate('BMPLC_L', {
     memory: 1536,
     hal: {
-        network: true  // Add network to base RPLC_L
+        network: true  // Add network to base BMPLC_L
     }
 });
 ```
@@ -63,14 +63,14 @@ const modifiedConfig = mergeConfigWithTemplate('RPLC_L', {
 ### 1. Create base with full set of functions
 ```typescript
 // Create config with all possible functions (all false)
-const newConfig = createFullConfig('MY_CUSTOM_RPLC', 1024);
+const newConfig = createFullConfig('MY_CUSTOM_BMPLC', 1024);
 // Result contains ALL fields for customization
 ```
 
 ### 2. Manual JSON configuration
 ```json
 {
-    "name": "MY_CUSTOM_RPLC",
+    "name": "MY_CUSTOM_BMPLC",
     "memory": 1024,
     "hal": {
         "flash_ex": false,    // ← Keep and change to true if needed
@@ -90,7 +90,7 @@ const newConfig = createFullConfig('MY_CUSTOM_RPLC', 1024);
 ### 3. Final compact result
 ```json
 {
-    "name": "MY_CUSTOM_RPLC", 
+    "name": "MY_CUSTOM_BMPLC", 
     "memory": 1024,
     "hal": {
         "rtc": true,
@@ -125,13 +125,13 @@ Each template contains:
 
 ### Examples of differences between configurations
 
-**RPLC_XL:** Full configuration with lwIP, flash_ex, io, rtc
-**RPLC_L:** Without lwIP, but with other components  
-**RPLC_M:** Minimal configuration only with USB, serial, speaker, CAN
+**BMPLC_XL:** Full configuration with lwIP, flash_ex, io, rtc
+**BMPLC_L:** Without lwIP, but with other components  
+**BMPLC_M:** Minimal configuration only with USB, serial, speaker, CAN
 
 ## Creating new templates
 
-1. Copy `rplc_template.json`
+1. Copy `bmplc_template.json`
 2. Change values according to requirements
 3. Add new template to `index.ts`
 4. Update this README

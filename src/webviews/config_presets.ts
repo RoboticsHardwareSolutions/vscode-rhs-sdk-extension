@@ -1,4 +1,4 @@
-export interface RPLCConfig {
+export interface BMPLCConfig {
         name: string;
         memory: number;
         hal: {
@@ -25,5 +25,5 @@ export interface RPLCConfig {
         compileDefinition: string;
 }
 
-// RPLC configurations are now available through JSON templates in templates/ folder
+// BMPLC configurations are now available through JSON templates in templates/ folder
 // Use: import { templates, getTemplate } from '../templates';

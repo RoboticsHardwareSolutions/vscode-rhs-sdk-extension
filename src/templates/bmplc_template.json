@@ -1,5 +1,5 @@
 {
-    "name": "RPLC_TEMPLATE",
+    "name": "BMPLC_TEMPLATE",
     "memory": 256,
     "hal": {
         "flash_ex": false,
@@ -22,5 +22,5 @@
         "memmng": false,
         "flash_ex": false
     },
-    "compileDefinition": "RPLC_TEMPLATE"
+    "compileDefinition": "BMPLC_TEMPLATE"
 }

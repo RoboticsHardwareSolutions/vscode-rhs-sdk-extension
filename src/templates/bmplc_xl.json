@@ -1,5 +1,5 @@
 {
-    "name": "RPLC_XL",
+    "name": "BMPLC_XL",
     "memory": 2048,
     "hal": {
         "flash_ex": true,
@@ -19,5 +19,5 @@
         "memmng": true,
         "flash_ex": true
     },
-    "compileDefinition": "RPLC_XL"
+    "compileDefinition": "BMPLC_XL"
 }

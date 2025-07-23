@@ -3,15 +3,15 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>RPLC Configurator</title>
+    <title>BMPLC Configurator</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <div class="container">
         <div class="preset-selector">
-            <h2>Select RPLC Model</h2>
-            <select id="RPLC_List">
+            <h2>Select BMPLC Model</h2>
+            <select id="BMPLC_List">
                 <option value="">-- Select --</option>
                 <!-- Options will be added via JS -->
             </select>
@@ -25,7 +25,7 @@
                 <div class="new-config-form">
                     <div class="form-group">
                         <label for="newConfigName">Configuration Name:</label>
-                        <input type="text" id="newConfigName" placeholder="MY_CUSTOM_RPLC" />
+                        <input type="text" id="newConfigName" placeholder="MY_CUSTOM_BMPLC" />
                     </div>
                     <div class="form-group">
                         <label for="newConfigMemory">Memory (KB):</label>
@@ -43,7 +43,7 @@
         <div class="preset-view" id="presetView">
             <h2>Configuration Preview</h2>
             <div id="presetContent">
-                <p>Please select an RPLC model</p>
+                <p>Please select a BMPLC model</p>
             </div>
         </div>
     </div>
@@ -51,9 +51,9 @@
     <script>
         const vscode = acquireVsCodeApi();
 
-        // Populate available RPLC list
-        function populateRPLCList(presets) {
-            const select = document.getElementById('RPLC_List');
+        // Populate available BMPLC list
+        function populateBMPLCList(presets) {
+            const select = document.getElementById('BMPLC_List');
             select.innerHTML = '<option value="">-- Select --</option>';
             presets.forEach(preset => {
                 const option = document.createElement('option');
@@ -64,14 +64,14 @@
         }
 
         // Selection change handler
-        document.getElementById('RPLC_List').addEventListener('change', (event) => {
+        document.getElementById('BMPLC_List').addEventListener('change', (event) => {
             const selectedValue = event.target.value;
             if (selectedValue) {
                 // Clear new config form
                 clearNewConfigForm();
                 
                 vscode.postMessage({
-                    command: 'rplcListChanged',
+                    command: 'bmplcListChanged',
                     value: selectedValue
                 });
             }
@@ -93,7 +93,7 @@
             }
 
             // Clear list selection
-            document.getElementById('RPLC_List').value = '';
+            document.getElementById('BMPLC_List').value = '';
 
             // Send command to create new config
             vscode.postMessage({
@@ -183,7 +183,7 @@
                 return controls;
             };
 
-            const isNewConfig = preset.name === 'RPLC_TEMPLATE' || !preset.name.startsWith('RPLC_');
+            const isNewConfig = preset.name === 'BMPLC_TEMPLATE' || !preset.name.startsWith('BMPLC_');
             
             let html = `
                 <div class="preset">
@@ -253,7 +253,7 @@
 
             switch (message.command) {
                 case 'initialize':
-                    populateRPLCList(message.presets);
+                    populateBMPLCList(message.presets);
                     break;
 
                 case 'updatePresetView':

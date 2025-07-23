@@ -32,7 +32,7 @@ const copyFilesPlugin = {
 	name: 'copy-files',
 	setup(build) {
 		build.onEnd(() => {
-			// Копируем JSON шаблоны в dist
+			// Copy JSON templates to dist
 			const srcTemplatesDir = path.join(__dirname, 'src', 'templates');
 			const distTemplatesDir = path.join(__dirname, 'dist', 'templates');
 
@@ -40,7 +40,7 @@ const copyFilesPlugin = {
 				fs.mkdirSync(distTemplatesDir, { recursive: true });
 			}
 
-			// Копируем все JSON файлы
+			// Copy all JSON files
 			const files = fs.readdirSync(srcTemplatesDir);
 			files.forEach(file => {
 				if (file.endsWith('.json')) {

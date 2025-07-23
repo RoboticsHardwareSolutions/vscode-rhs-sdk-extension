@@ -2,16 +2,16 @@
 
 ## Configuration saving to repository functionality
 
-The extension now supports automatic cloning of RPLC Quick Project repository and saving created configuration.
+The extension now supports automatic cloning of BMPLC Quick Project repository and saving created configuration.
 
 ### How it works:
 
-1. **Configuration creation**: User creates or configures RPLC configuration through Creator interface
+1. **Configuration creation**: User creates or configures BMPLC configuration through Creator interface
 2. **Save to repository**: When clicking "Save to repository" button:
    - Select folder for project cloning
-   - Clone repository `https://github.com/RoboticsHardwareSolutions/RPLC_Quick_Project.git` with recursive submodules
+   - Clone repository `https://github.com/RoboticsHardwareSolutions/BMPLC_Quick_Project.git` with recursive submodules
    - Clean configuration from empty objects (fields with false value are preserved)
-   - Save `rplc_config.json` file to project root
+   - Save `bmplc_config.json` file to project root
    - Offer to open project folder in VS Code
 
 ### Technical implementation:

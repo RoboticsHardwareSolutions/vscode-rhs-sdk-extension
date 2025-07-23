@@ -1,13 +1,13 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "RPLC Configuration Schema",
-    "description": "JSON Schema for RPLC configuration templates",
+    "title": "BMPLC Configuration Schema",
+    "description": "JSON Schema for BMPLC configuration templates",
     "type": "object",
     "required": ["name", "memory", "hal", "services", "tests", "compileDefinition"],
     "properties": {
         "name": {
             "type": "string",
-            "description": "Name of the RPLC configuration"
+            "description": "Name of the BMPLC configuration"
         },
         "memory": {
             "type": "number",

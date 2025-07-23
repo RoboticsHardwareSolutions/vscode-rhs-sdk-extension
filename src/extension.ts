@@ -44,7 +44,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
     // panel.webview.html = getWebviewContent(context, panel);
     panel.webview.postMessage({
         command: 'initialize',
-        presets: Object.values(templates).filter(template => template.name !== 'RPLC_TEMPLATE')
+        presets: Object.values(templates).filter(template => template.name !== 'BMPLC_TEMPLATE')
     });
 
     openPanels[pageName] = panel;
@@ -56,7 +56,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
     panel.webview.onDidReceiveMessage(
         async message => {
             switch (message.command) {
-                case 'rplcListChanged':
+                case 'bmplcListChanged':
                     vscode.window.showInformationMessage(`Selected value: ${message.value}`);
                     const preset = getTemplate(message.value);
                     if (preset) {
@@ -68,7 +68,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
                     break;
                 case 'createNewConfig':
 					try {
-						const fullConfig = createFullConfig(message.name || 'MY_CUSTOM_RPLC', message.memory || 512);
+						const fullConfig = createFullConfig(message.name || 'MY_CUSTOM_BMPLC', message.memory || 512);
 						panel.webview.postMessage({
 							command: 'updatePresetView',
 							preset: fullConfig
@@ -123,7 +123,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 }
 
 async function saveConfigToRepository(config: any) {
-    const repoUrl = 'https://github.com/RoboticsHardwareSolutions/RPLC_Quick_Project.git';
+    const repoUrl = 'https://github.com/RoboticsHardwareSolutions/BMPLC_Quick_Project.git';
     
     // Show folder selection dialog
     const folderUri = await vscode.window.showOpenDialog({
@@ -138,7 +138,7 @@ async function saveConfigToRepository(config: any) {
     }
 
     const targetPath = folderUri[0].fsPath;
-    const projectName = 'RPLC_Quick_Project';
+    const projectName = 'BMPLC_Quick_Project';
     const projectPath = path.join(targetPath, projectName);
 
     try {
@@ -156,7 +156,7 @@ async function saveConfigToRepository(config: any) {
             progress.report({ message: "Saving configuration..." });
             
             // Save configuration to file
-            const configFilePath = path.join(projectPath, 'rplc_config.json');
+            const configFilePath = path.join(projectPath, 'bmplc_config.json');
             fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2));
             
             progress.report({ message: "Done!" });
