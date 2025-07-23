@@ -43,6 +43,13 @@
         },
 		{
 			"type": "npm",
+			"script": "compile",
+			"group": "build",
+			"label": "npm: compile",
+			"detail": "Compile TypeScript and bundle with esbuild"
+		},
+		{
+			"type": "npm",
 			"script": "watch-tests",
 			"problemMatcher": "$tsc-watch",
 			"isBackground": true,

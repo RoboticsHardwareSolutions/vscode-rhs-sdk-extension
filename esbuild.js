@@ -50,6 +50,30 @@ const copyFilesPlugin = {
 					console.log(`Copied ${file} to dist/templates/`);
 				}
 			});
+
+			// Copy media files to dist
+			const srcMediaDir = path.join(__dirname, 'src', 'media');
+			const distMediaDir = path.join(__dirname, 'src', 'media'); // Keep original path for VS Code
+
+			if (fs.existsSync(srcMediaDir)) {
+				if (!fs.existsSync(distMediaDir)) {
+					fs.mkdirSync(distMediaDir, { recursive: true });
+				}
+
+				// Copy all media files (svg, png, etc.)
+				const mediaFiles = fs.readdirSync(srcMediaDir);
+				mediaFiles.forEach(file => {
+					if (file.endsWith('.svg') || file.endsWith('.png') || file.endsWith('.jpg') || file.endsWith('.ico')) {
+						const srcFile = path.join(srcMediaDir, file);
+						const distFile = path.join(distMediaDir, file);
+						// Only copy if source and destination are different
+						if (srcFile !== distFile) {
+							fs.copyFileSync(srcFile, distFile);
+							console.log(`Copied ${file} to media/`);
+						}
+					}
+				});
+			}
 		});
 	},
 };
