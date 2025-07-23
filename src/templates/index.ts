@@ -2,7 +2,7 @@ import { RPLCConfig } from '../webviews/config_presets';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// В runtime __dirname указывает на dist/, а файлы в dist/templates/
+// In runtime __dirname points to dist/, and files are in dist/templates/
 const templatesDir = path.join(__dirname, 'templates');
 
 function loadTemplate(filename: string): RPLCConfig {
@@ -42,8 +42,8 @@ export function createConfigFromTemplate(templateName: string, customName?: stri
 }
 
 export function createFullConfig(name: string, memory: number = 512): RPLCConfig {
-    // Создает полную конфигурацию на основе общего шаблона со всеми возможными функциями
-    // Пользователь может включить нужные (true) и удалить ненужные поля из JSON
+    // Creates full configuration based on general template with all possible functions
+    // User can enable needed ones (true) and remove unnecessary fields from JSON
     const template = getTemplate('RPLC_TEMPLATE');
     if (!template) {
         throw new Error('Base template not found');

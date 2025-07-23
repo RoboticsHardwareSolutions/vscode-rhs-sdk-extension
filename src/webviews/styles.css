@@ -79,7 +79,7 @@ button:hover {
     text-decoration: underline;
 }
 
-/* Новые стили для создания конфигурации */
+/* New styles for configuration creation */
 .or-divider {
     text-align: center;
     margin: 15px 0;
@@ -153,7 +153,7 @@ button:hover {
     background-color: var(--vscode-button-secondaryHoverBackground, #6a6a6a);
 }
 
-/* Стили для конфигурации */
+/* Configuration styles */
 .config-group {
     margin-bottom: 15px;
     border: 1px solid var(--vscode-input-border);
@@ -243,7 +243,7 @@ button:hover {
     font-family: var(--vscode-editor-font-family);
 }
 
-/* Адаптивность */
+/* Responsive design */
 @media (max-width: 800px) {
     .container {
         flex-direction: column;

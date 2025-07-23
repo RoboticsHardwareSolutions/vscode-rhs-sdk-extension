@@ -75,7 +75,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 						});
 					} catch (error) {
 						console.error('Error creating new config:', error);
-						vscode.window.showErrorMessage('Ошибка при создании нового конфига');
+						vscode.window.showErrorMessage('Error creating new config');
 					}
 					break;
 
@@ -84,11 +84,11 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 						await saveConfigToRepository(message.config);
 					} catch (error) {
 						console.error('Error saving config to repository:', error);
-						vscode.window.showErrorMessage('Ошибка при сохранении конфига в репозиторий');
+						vscode.window.showErrorMessage('Error saving config to repository');
 					}
 					break;
                 case 'saveConfig':
-                    // Обработка сохранения конфигурации
+                    // Handle configuration saving
                     // saveConfiguration(message.config);
                     break;
             }
@@ -125,12 +125,12 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 async function saveConfigToRepository(config: any) {
     const repoUrl = 'https://github.com/RoboticsHardwareSolutions/RPLC_Quick_Project.git';
     
-    // Показываем диалог для выбора папки
+    // Show folder selection dialog
     const folderUri = await vscode.window.showOpenDialog({
         canSelectFiles: false,
         canSelectFolders: true,
         canSelectMany: false,
-        openLabel: 'Выберите папку для клонирования проекта'
+        openLabel: 'Select folder for project cloning'
     });
 
     if (!folderUri || folderUri.length === 0) {
@@ -142,39 +142,39 @@ async function saveConfigToRepository(config: any) {
     const projectPath = path.join(targetPath, projectName);
 
     try {
-        // Показываем прогресс
+        // Show progress
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: "Клонирование репозитория и сохранение конфигурации",
+            title: "Cloning repository and saving configuration",
             cancellable: false
         }, async (progress) => {
-            progress.report({ message: "Клонирование репозитория..." });
+            progress.report({ message: "Cloning repository..." });
             
-            // Клонируем репозиторий
+            // Clone repository
             await execAsync(`git clone --recursive ${repoUrl}`, { cwd: targetPath });
             
-            progress.report({ message: "Сохранение конфигурации..." });
+            progress.report({ message: "Saving configuration..." });
             
-            // Сохраняем конфигурацию в файл
+            // Save configuration to file
             const configFilePath = path.join(projectPath, 'rplc_config.json');
             fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2));
             
-            progress.report({ message: "Готово!" });
+            progress.report({ message: "Done!" });
         });
 
-        // Предлагаем открыть папку проекта
+        // Offer to open project folder
         const choice = await vscode.window.showInformationMessage(
-            'Проект успешно создан! Открыть папку проекта?',
-            'Открыть', 'Отмена'
+            'Project created successfully! Open project folder?',
+            'Open', 'Cancel'
         );
 
-        if (choice === 'Открыть') {
+        if (choice === 'Open') {
             await vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(projectPath), true);
         }
 
     } catch (error) {
         console.error('Error cloning repository or saving config:', error);
-        vscode.window.showErrorMessage(`Ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        vscode.window.showErrorMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 

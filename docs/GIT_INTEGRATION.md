@@ -1,36 +1,36 @@
-# Git Integration для RHS SDK Extension
+# Git Integration for RHS SDK Extension
 
-## Функциональность сохранения конфигурации в репозиторий
+## Configuration saving to repository functionality
 
-Расширение теперь поддерживает автоматическое клонирование репозитория RPLC Quick Project и сохранение созданной конфигурации.
+The extension now supports automatic cloning of RPLC Quick Project repository and saving created configuration.
 
-### Как работает:
+### How it works:
 
-1. **Создание конфигурации**: Пользователь создает или настраивает RPLC конфигурацию через интерфейс Creator
-2. **Сохранение в репозиторий**: При нажатии кнопки "Сохранить в репозиторий" происходит:
-   - Выбор папки для клонирования проекта
-   - Клонирование репозитория `https://github.com/RoboticsHardwareSolutions/RPLC_Quick_Project.git` с рекурсивными подмодулями
-   - Очистка конфигурации от пустых объектов (поля со значением false сохраняются)
-   - Сохранение файла `rplc_config.json` в корень проекта
-   - Предложение открыть папку проекта в VS Code
+1. **Configuration creation**: User creates or configures RPLC configuration through Creator interface
+2. **Save to repository**: When clicking "Save to repository" button:
+   - Select folder for project cloning
+   - Clone repository `https://github.com/RoboticsHardwareSolutions/RPLC_Quick_Project.git` with recursive submodules
+   - Clean configuration from empty objects (fields with false value are preserved)
+   - Save `rplc_config.json` file to project root
+   - Offer to open project folder in VS Code
 
-### Техническая реализация:
+### Technical implementation:
 
 #### Frontend (creator.html)
-- Функция `cleanConfigForExport()` удаляет только пустые объекты (поля со значением false сохраняются)
-- Отправка команды `saveConfigToRepo` с очищенной конфигурацией
+- Function `cleanConfigForExport()` removes only empty objects (fields with false value are preserved)
+- Send `saveConfigToRepo` command with cleaned configuration
 
 #### Backend (extension.ts)
-- Функция `saveConfigToRepository()` обрабатывает:
-  - Диалог выбора папки
-  - Git клонирование с `--recursive` флагом
-  - Сохранение JSON файла
-  - Показ прогресса операции
+- Function `saveConfigToRepository()` handles:
+  - Folder selection dialog
+  - Git cloning with `--recursive` flag
+  - JSON file saving
+  - Operation progress display
 
-### Зависимости:
-- Git должен быть установлен в системе
-- Доступ к интернету для клонирования репозитория
+### Dependencies:
+- Git must be installed on the system
+- Internet access for repository cloning
 
-### Файлы изменений:
-- `src/extension.ts` - добавлена функция `saveConfigToRepository`
-- `src/webviews/creator.html` - добавлена функция `cleanConfigForExport` и обработчик кнопки
+### Changed files:
+- `src/extension.ts` - added `saveConfigToRepository` function
+- `src/webviews/creator.html` - added `cleanConfigForExport` function and button handler

@@ -13,7 +13,7 @@
             <h2>Select RPLC Model</h2>
             <select id="RPLC_List">
                 <option value="">-- Select --</option>
-                <!-- Опции будут добавлены через JS -->
+                <!-- Options will be added via JS -->
             </select>
 
             <div class="or-divider">
@@ -36,7 +36,7 @@
             </div>
 
             <div id="dynamicOptions">
-                <!-- Динамические опции конфигурации -->
+                <!-- Dynamic configuration options -->
             </div>
         </div>
 
@@ -51,7 +51,7 @@
     <script>
         const vscode = acquireVsCodeApi();
 
-        // Заполняем список доступных RPLC
+        // Populate available RPLC list
         function populateRPLCList(presets) {
             const select = document.getElementById('RPLC_List');
             select.innerHTML = '<option value="">-- Select --</option>';
@@ -63,11 +63,11 @@
             });
         }
 
-        // Обработчик изменения выбора
+        // Selection change handler
         document.getElementById('RPLC_List').addEventListener('change', (event) => {
             const selectedValue = event.target.value;
             if (selectedValue) {
-                // Очищаем форму создания нового конфига
+                // Clear new config form
                 clearNewConfigForm();
                 
                 vscode.postMessage({
@@ -77,7 +77,7 @@
             }
         });
 
-        // Обработчик создания нового конфига
+        // New config creation handler
         document.getElementById('createNewButton').addEventListener('click', () => {
             const name = document.getElementById('newConfigName').value.trim();
             const memory = parseInt(document.getElementById('newConfigMemory').value);
@@ -92,10 +92,10 @@
                 return;
             }
 
-            // Очищаем выбор из списка
+            // Clear list selection
             document.getElementById('RPLC_List').value = '';
 
-            // Отправляем команду для создания нового конфига
+            // Send command to create new config
             vscode.postMessage({
                 command: 'createNewConfig',
                 name: name,
@@ -103,13 +103,13 @@
             });
         });
 
-        // Функция очистки формы создания нового конфига
+        // Function to clear new config form
         function clearNewConfigForm() {
             document.getElementById('newConfigName').value = '';
             document.getElementById('newConfigMemory').value = '512';
         }
 
-        // Функция для очистки конфигурации - убираем только пустые объекты
+        // Function to clean configuration - remove only empty objects
         function cleanConfigForExport(config) {
             const cleaned = JSON.parse(JSON.stringify(config)); // Deep copy
             
@@ -117,7 +117,7 @@
                 for (const key in obj) {
                     if (obj[key] && typeof obj[key] === 'object') {
                         removeEmptyObjects(obj[key]);
-                        // Удаляем только пустые объекты
+                        // Remove only empty objects
                         if (Object.keys(obj[key]).length === 0) {
                             delete obj[key];
                         }
@@ -129,11 +129,11 @@
             return cleaned;
         }
 
-        // Обновляем отображение пресета
+        // Update preset display
         function updatePresetDisplay(preset) {
             const presetContent = document.getElementById('presetContent');
             
-            // Функция для определения типа и создания соответствующего элемента
+            // Function to determine type and create corresponding element
             const createInputForValue = (key, value) => {
                 const type = typeof value;
                 
@@ -151,13 +151,13 @@
                 }
             };
 
-            // Функция для рекурсивного создания элементов конфигурации
+            // Function for recursive creation of configuration elements
             const createConfigControls = (config, prefix = '') => {
                 let controls = '';
                 
                 for (const [key, value] of Object.entries(config)) {
                     if (key === 'name' || key === 'compileDefinition') {
-                        // Пропускаем эти поля в основной конфигурации
+                        // Skip these fields in main configuration
                         continue;
                     }
                     
@@ -213,7 +213,7 @@
 
             presetContent.innerHTML = html;
             
-            // Добавляем обработчик сохранения
+            // Add save handler
             presetContent.querySelector('.save-btn').addEventListener('click', () => {
                 const inputs = presetContent.querySelectorAll('.config-input');
                 const updatedConfig = {...preset};
@@ -234,12 +234,12 @@
                             : input.value;
                 });
                 
-                // Создаем очищенную конфигурацию (убираем пустые объекты)
+                // Create cleaned configuration (remove empty objects)
                 const cleanConfig = cleanConfigForExport(updatedConfig);
                 
                 console.log('Saving config:', cleanConfig);
                 
-                // Отправляем команду на сохранение с клонированием репозитория
+                // Send command to save with repository cloning
                 vscode.postMessage({
                     command: 'saveConfigToRepo',
                     config: cleanConfig
@@ -247,7 +247,7 @@
             });
         }
 
-        // Обновляем представление при получении новых данных
+        // Update view when receiving new data
         window.addEventListener('message', event => {
             const message = event.data;
 
@@ -263,7 +263,7 @@
             }
         });
 
-        // Запрашиваем начальные данные при загрузке
+        // Request initial data on load
         vscode.postMessage({ command: 'getInitialData' });
     </script>
 </body>

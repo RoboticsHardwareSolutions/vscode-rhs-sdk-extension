@@ -25,5 +25,5 @@ export interface RPLCConfig {
         compileDefinition: string;
 }
 
-// Конфигурации RPLC теперь доступны через JSON шаблоны в папке templates/
-// Используйте: import { templates, getTemplate } from '../templates';
+// RPLC configurations are now available through JSON templates in templates/ folder
+// Use: import { templates, getTemplate } from '../templates';
