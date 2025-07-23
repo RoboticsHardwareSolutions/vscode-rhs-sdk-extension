@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { templates, getTemplate, createFullConfig } from './templates';
+import { BMPLCConfig } from './webviews/config_presets';
 
 const execAsync = promisify(exec);
 
@@ -18,6 +19,9 @@ export function activate(context: vscode.ExtensionContext) {
             openHtmlPage(context, pageName);
         })
     );
+
+    // Setup workspace watcher for auto-opening editor
+    setupWorkspaceWatcher(context);
 }
 
 const openPanels: Record<string, vscode.WebviewPanel | undefined> = {};
@@ -42,10 +46,44 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
     );
 
     // panel.webview.html = getWebviewContent(context, panel);
-    panel.webview.postMessage({
-        command: 'initialize',
-        presets: Object.values(templates).filter(template => template.name !== 'BMPLC_TEMPLATE')
-    });
+    
+    // Initialize different pages with different data
+    if (pageName === 'editor') {
+        // For editor, find and send existing configurations
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        const foundConfigs: Array<{ path: string, config: BMPLCConfig }> = [];
+        
+        if (workspaceFolders) {
+            for (const folder of workspaceFolders) {
+                const configPaths = findBMPLCConfigs(folder.uri.fsPath);
+                for (const configPath of configPaths) {
+                    try {
+                        const configContent = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                        foundConfigs.push({
+                            path: configPath,
+                            config: configContent
+                        });
+                    } catch (error) {
+                        // Skip invalid configs
+                    }
+                }
+            }
+        }
+        
+        panel.webview.postMessage({
+            command: 'initialize',
+            pageType: 'editor',
+            configs: foundConfigs,
+            workspacePath: workspaceFolders?.[0]?.uri.fsPath || ''
+        });
+    } else {
+        // For creator, send templates
+        panel.webview.postMessage({
+            command: 'initialize',
+            pageType: 'creator',
+            presets: Object.values(templates).filter(template => template.name !== 'BMPLC_TEMPLATE')
+        });
+    }
 
     openPanels[pageName] = panel;
 
@@ -88,8 +126,45 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 					}
 					break;
                 case 'saveConfig':
-                    // Handle configuration saving
-                    // saveConfiguration(message.config);
+                    // Handle configuration saving to existing file
+                    try {
+                        if (message.filePath && message.config) {
+                            fs.writeFileSync(message.filePath, JSON.stringify(message.config, null, 2), 'utf-8');
+                            vscode.window.showInformationMessage(`Configuration saved to ${path.basename(message.filePath)}`);
+                            
+                            // Refresh the editor to show updated config
+                            if (panel.title === 'editor') {
+                                const workspaceFolders = vscode.workspace.workspaceFolders;
+                                if (workspaceFolders) {
+                                    const foundConfigs: Array<{ path: string, config: BMPLCConfig }> = [];
+                                    
+                                    for (const folder of workspaceFolders) {
+                                        const configPaths = findBMPLCConfigs(folder.uri.fsPath);
+                                        for (const configPath of configPaths) {
+                                            try {
+                                                const configContent = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                                                foundConfigs.push({
+                                                    path: configPath,
+                                                    config: configContent
+                                                });
+                                            } catch (error) {
+                                                // Skip invalid configs
+                                            }
+                                        }
+                                    }
+                                    
+                                    panel.webview.postMessage({
+                                        command: 'refreshConfigs',
+                                        configs: foundConfigs,
+                                        workspacePath: workspaceFolders[0].uri.fsPath
+                                    });
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error saving config:', error);
+                        vscode.window.showErrorMessage('Error saving configuration');
+                    }
                     break;
             }
         },
@@ -220,4 +295,100 @@ class ToolItem extends vscode.TreeItem {
         light: vscode.Uri.file(path.join(__dirname, '..', 'media', 'light', 'tool.svg')),
         dark: vscode.Uri.file(path.join(__dirname, '..', 'media', 'dark', 'tool.svg'))
     };
+}
+
+// Smart config file naming function
+function getConfigFileName(config: BMPLCConfig): string {
+    // Always use standard filename for consistency
+    return 'bmplc_config.json';
+}
+
+// Function to check if file is BMPLC configuration by filename
+function isBMPLCConfigFile(filename: string): boolean {
+    // Only accept files named exactly "bmplc_config.json"
+    return filename.toLowerCase() === 'bmplc_config.json';
+}
+
+// Function to validate if JSON content is actually a BMPLC config
+function validateBMPLCConfig(filePath: string): boolean {
+    try {
+        const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+        // Check required BMPLC configuration fields
+        return content.name && 
+               typeof content.memory === 'number' && 
+               content.hal && 
+               content.compileDefinition;
+    } catch {
+        return false;
+    }
+}
+
+// Function to find BMPLC configuration files in project
+function findBMPLCConfigs(workspacePath: string): string[] {
+    const configs: string[] = [];
+    
+    function searchDirectory(dir: string, maxDepth: number = 3): void {
+        if (maxDepth <= 0) {
+            return;
+        }
+        
+        try {
+            const files = fs.readdirSync(dir);
+            
+            for (const file of files) {
+                const fullPath = path.join(dir, file);
+                const stat = fs.statSync(fullPath);
+                
+                if (stat.isDirectory() && !file.startsWith('.') && file !== 'node_modules') {
+                    searchDirectory(fullPath, maxDepth - 1);
+                } else if (isBMPLCConfigFile(file)) {
+                    // First check by filename, then validate content
+                    if (validateBMPLCConfig(fullPath)) {
+                        configs.push(fullPath);
+                    }
+                }
+            }
+        } catch (error) {
+            // Skip directories we can't read
+        }
+    }
+    
+    if (fs.existsSync(workspacePath)) {
+        searchDirectory(workspacePath);
+    }
+    
+    return configs;
+}
+
+// Function to watch for workspace changes and auto-open editor
+function setupWorkspaceWatcher(context: vscode.ExtensionContext) {
+    // Check on activation
+    checkAndOpenEditor(context);
+    
+    // Watch for file changes
+    const watcher = vscode.workspace.createFileSystemWatcher('**/*.json');
+    
+    watcher.onDidCreate(() => checkAndOpenEditor(context));
+    watcher.onDidChange(() => checkAndOpenEditor(context));
+    
+    context.subscriptions.push(watcher);
+}
+
+// Function to check workspace and open editor if configs found
+function checkAndOpenEditor(context: vscode.ExtensionContext) {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders) {
+        return;
+    }
+    
+    for (const folder of workspaceFolders) {
+        const configs = findBMPLCConfigs(folder.uri.fsPath);
+        if (configs.length > 0) {
+            // Auto-open editor if configs found
+            setTimeout(() => {
+                openHtmlPage(context, 'editor');
+            }, 1000); // Delay to avoid rapid opening
+            break;
+        }
+    }
 }

@@ -204,6 +204,10 @@ button:hover {
     font-size: 13px;
 }
 
+.save-btn:hover {
+    background-color: var(--vscode-button-hoverBackground);
+}
+
 .preset {
     max-width: 100%;
 }
@@ -274,4 +278,76 @@ button:hover {
         width: 100%;
         max-width: 300px;
     }
+}
+
+
+
+/* ===== EDITOR-SPECIFIC STYLES ===== */
+
+.config-path {
+    font-family: var(--vscode-editor-font-family);
+    font-size: 12px;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background-color: var(--vscode-input-background);
+    border-radius: 3px;
+    border-left: 3px solid var(--vscode-focusBorder);
+}
+
+/* Auto-loading config display styles */
+.config-info-display {
+    background: var(--vscode-editor-background);
+    border: 1px solid var(--vscode-widget-border);
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.config-info-display h3 {
+    margin: 0 0 12px 0;
+    color: var(--vscode-foreground);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.config-file-path {
+    background: var(--vscode-textCodeBlock-background);
+    color: var(--vscode-textCodeBlock-foreground);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: var(--vscode-editor-font-family);
+    font-size: 13px;
+    margin-bottom: 12px;
+    word-break: break-all;
+}
+
+.config-status {
+    color: var(--vscode-terminal-ansiGreen);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.no-configs {
+    text-align: center;
+    color: var(--vscode-descriptionForeground);
+}
+
+.no-configs h3 {
+    color: var(--vscode-errorForeground);
+    margin-bottom: 12px;
+}
+
+.no-configs code {
+    background: var(--vscode-textCodeBlock-background);
+    color: var(--vscode-textCodeBlock-foreground);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: var(--vscode-editor-font-family);
+}
+
+.loading {
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+    text-align: center;
 }
