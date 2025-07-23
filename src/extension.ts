@@ -20,8 +20,8 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    // Setup workspace watcher for auto-opening editor
-    setupWorkspaceWatcher(context);
+    // Setup workspace watcher for auto-opening editor - DISABLED
+    // setupWorkspaceWatcher(context);
 }
 
 const openPanels: Record<string, vscode.WebviewPanel | undefined> = {};
@@ -360,35 +360,35 @@ function findBMPLCConfigs(workspacePath: string): string[] {
     return configs;
 }
 
-// Function to watch for workspace changes and auto-open editor
-function setupWorkspaceWatcher(context: vscode.ExtensionContext) {
-    // Check on activation
-    checkAndOpenEditor(context);
+// Function to watch for workspace changes and auto-open editor - DISABLED
+// function setupWorkspaceWatcher(context: vscode.ExtensionContext) {
+//     // Check on activation
+//     checkAndOpenEditor(context);
     
-    // Watch for file changes
-    const watcher = vscode.workspace.createFileSystemWatcher('**/*.json');
+//     // Watch for file changes
+//     const watcher = vscode.workspace.createFileSystemWatcher('**/*.json');
     
-    watcher.onDidCreate(() => checkAndOpenEditor(context));
-    watcher.onDidChange(() => checkAndOpenEditor(context));
+//     watcher.onDidCreate(() => checkAndOpenEditor(context));
+//     watcher.onDidChange(() => checkAndOpenEditor(context));
     
-    context.subscriptions.push(watcher);
-}
+//     context.subscriptions.push(watcher);
+// }
 
-// Function to check workspace and open editor if configs found
-function checkAndOpenEditor(context: vscode.ExtensionContext) {
-    const workspaceFolders = vscode.workspace.workspaceFolders;
-    if (!workspaceFolders) {
-        return;
-    }
+// Function to check workspace and open editor if configs found - DISABLED
+// function checkAndOpenEditor(context: vscode.ExtensionContext) {
+//     const workspaceFolders = vscode.workspace.workspaceFolders;
+//     if (!workspaceFolders) {
+//         return;
+//     }
     
-    for (const folder of workspaceFolders) {
-        const configs = findBMPLCConfigs(folder.uri.fsPath);
-        if (configs.length > 0) {
-            // Auto-open editor if configs found
-            setTimeout(() => {
-                openHtmlPage(context, 'editor');
-            }, 1000); // Delay to avoid rapid opening
-            break;
-        }
-    }
-}
+//     for (const folder of workspaceFolders) {
+//         const configs = findBMPLCConfigs(folder.uri.fsPath);
+//         if (configs.length > 0) {
+//             // Auto-open editor if configs found
+//             setTimeout(() => {
+//                 openHtmlPage(context, 'editor');
+//             }, 1000); // Delay to avoid rapid opening
+//             break;
+//         }
+//     }
+// }
