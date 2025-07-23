@@ -2,6 +2,19 @@
 
 All notable changes to the "RHS SDK Tools" extension will be documented in this file.
 
+## [0.0.3] - 2025-07-24
+
+### Added
+- Added extension icon for Visual Studio Marketplace
+
+## [0.0.2] - 2025-07-24
+
+### Fixed
+- Fixed webviews not loading after extension publication
+- Added proper webviews files (HTML/CSS) to extension package
+- Improved file path resolution for production builds
+- Fixed "ENOENT: no such file or directory" error for webview resources
+
 ## [0.0.1] - 2025-07-23
 
 ### Added

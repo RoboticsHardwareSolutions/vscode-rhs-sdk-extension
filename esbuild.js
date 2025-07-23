@@ -51,6 +51,27 @@ const copyFilesPlugin = {
 				}
 			});
 
+			// Copy webviews files to dist
+			const srcWebviewsDir = path.join(__dirname, 'src', 'webviews');
+			const distWebviewsDir = path.join(__dirname, 'dist', 'webviews');
+
+			if (fs.existsSync(srcWebviewsDir)) {
+				if (!fs.existsSync(distWebviewsDir)) {
+					fs.mkdirSync(distWebviewsDir, { recursive: true });
+				}
+
+				// Copy HTML and CSS files
+				const webviewFiles = fs.readdirSync(srcWebviewsDir);
+				webviewFiles.forEach(file => {
+					if (file.endsWith('.html') || file.endsWith('.css')) {
+						const srcFile = path.join(srcWebviewsDir, file);
+						const distFile = path.join(distWebviewsDir, file);
+						fs.copyFileSync(srcFile, distFile);
+						console.log(`Copied ${file} to dist/webviews/`);
+					}
+				});
+			}
+
 			// Copy media files to dist
 			const srcMediaDir = path.join(__dirname, 'src', 'media');
 			const distMediaDir = path.join(__dirname, 'src', 'media'); // Keep original path for VS Code

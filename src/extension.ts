@@ -172,7 +172,11 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
         context.subscriptions
     );
 
-    const htmlPath = path.join(context.extensionPath, 'src', 'webviews', `${pageName}.html`);
+    // Try dist/webviews first (production), then src/webviews (development)
+    let htmlPath = path.join(context.extensionPath, 'dist', 'webviews', `${pageName}.html`);
+    if (!fs.existsSync(htmlPath)) {
+        htmlPath = path.join(context.extensionPath, 'src', 'webviews', `${pageName}.html`);
+    }
 
     fs.readFile(htmlPath, 'utf8', (err, content) => {
         if (err) {
@@ -188,9 +192,14 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 
         // const resourcePath = vscode.Uri.file(path.join(context.extensionPath, 'src', 'webviews'));
 
+        // Determine webviews path (dist or src)
+        let webviewsPath = path.join(context.extensionPath, 'dist', 'webviews');
+        if (!fs.existsSync(webviewsPath)) {
+            webviewsPath = path.join(context.extensionPath, 'src', 'webviews');
+        }
+
         content = content.replace(/(src|href)="([^"]*)"/g, (match, p1, p2) => {
-            return `${p1}="${panel.webview.asWebviewUri(vscode.Uri.file(path.join(context.extensionPath, 'src', 'webviews'
-                , p2)))}"`;
+            return `${p1}="${panel.webview.asWebviewUri(vscode.Uri.file(path.join(webviewsPath, p2)))}"`;
         });
 
         panel.webview.html = content;

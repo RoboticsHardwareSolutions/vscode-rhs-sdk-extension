@@ -1,7 +1,7 @@
 # RHS SDK Tools
 
 [![Visual Studio Marketplace](https://img.shields.io/badge/Visual%20Studio-Marketplace-blue)](https://marketplace.visualstudio.com/items?itemName=RoboticsHardwareSolutions.rhs-sdk)
-[![Version](https://img.shields.io/badge/version-0.0.1-green)](https://github.com/RoboticsHardwareSolutions/vscode-rhs-sdk-extension)
+[![Version](https://img.shields.io/badge/version-0.0.3-green)](https://github.com/RoboticsHardwareSolutions/vscode-rhs-sdk-extension)
 [![License](https://img.shields.io/badge/license-MIT-orange)](LICENSE)
 
 VS Code extension for **BMPLC (BareMetal PLC)** configuration management. Streamline your embedded hardware development with intuitive configuration tools.
@@ -37,7 +37,7 @@ VS Code extension for **BMPLC (BareMetal PLC)** configuration management. Stream
 ### From VSIX (Development)
 ```bash
 # Download and install locally
-code --install-extension rhs-sdk-0.0.1.vsix
+code --install-extension rhs-sdk-0.0.3.vsix
 ```
 
 ## 🎯 Quick Start
