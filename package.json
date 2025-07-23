@@ -1,8 +1,13 @@
 {
   "name": "rhs-sdk",
-  "displayName": "rhs-sdk",
-  "description": "",
+  "displayName": "RHS SDK Tools",
+  "description": "VS Code extension for BMPLC (BareMetal PLC) configuration management",
   "version": "0.0.1",
+  "publisher": "RoboticsHardwareSolutions",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RoboticsHardwareSolutions/vscode-rhs-sdk-extension.git"
+  },
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -10,26 +15,12 @@
     "Other"
   ],
   "main": "./dist/extension.js",
-  "activationEvents": [
-    "onCommand:configurator.editor",
-    "onView:rhs-sdk.tools"
-  ],
   "contributes": {
     "commands": [
       {
         "command": "rhs-sdk.tools.open",
         "title": "Open Tool Page",
-        "category": "Tools"
-      },
-      {
-        "command": "rhs-sdk.tools.creator",
-        "title": "Open Page 1",
-        "icon": "$(symbol-string)"
-      },
-      {
-        "command": "rhs-sdk.tools.editor",
-        "title": "Open Page 1",
-        "icon": "$(symbol-string)"
+        "category": "RHS SDK"
       }
     ],
     "viewsContainers": {
@@ -45,7 +36,9 @@
       "rhs-sdk-sidebar": [
         {
           "id": "rhs-sdk.tools",
-          "name": "Tools"
+          "name": "BMPLC Tools",
+          "icon": "$(settings-gear)",
+          "contextualTitle": "BMPLC Configuration Tools"
         }
       ]
     }
@@ -65,16 +58,16 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.100.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/vscode": "^1.100.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^9.25.1",
-    "esbuild": "^0.25.3",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.8.3",
     "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.5.2"
+    "@vscode/test-electron": "^2.5.2",
+    "esbuild": "^0.25.3",
+    "eslint": "^9.25.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.8.3"
   }
 }
