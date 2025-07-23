@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { RPLCs, RPLCConfig } from './webviews/config_presets';
+import { templates, getTemplate, createFullConfig } from './templates';
 
 export function activate(context: vscode.ExtensionContext) {
     const view = vscode.window.createTreeView('rhs-sdk.tools', {
@@ -40,7 +40,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
     // panel.webview.html = getWebviewContent(context, panel);
     panel.webview.postMessage({
         command: 'initialize',
-        presets: RPLCs
+        presets: Object.values(templates).filter(template => template.name !== 'RPLC_TEMPLATE')
     });
 
     openPanels[pageName] = panel;
@@ -54,12 +54,25 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
             switch (message.command) {
                 case 'rplcListChanged':
                     vscode.window.showInformationMessage(`Selected value: ${message.value}`);
-                    const preset = RPLCs.find(rplc => rplc.name === message.value);
+                    const preset = getTemplate(message.value);
                     if (preset) {
                         panel.webview.postMessage({
                             command: 'updatePresetView',
                             preset: preset
                         });
+                    }
+                    break;
+                case 'createNewConfig':
+                    vscode.window.showInformationMessage(`Creating new config: ${message.name}`);
+                    try {
+                        const newConfig = createFullConfig(message.name, message.memory);
+                        panel.webview.postMessage({
+                            command: 'updatePresetView',
+                            preset: newConfig
+                        });
+                    } catch (error) {
+                        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                        vscode.window.showErrorMessage(`Error creating config: ${errorMessage}`);
                     }
                     break;
                 case 'saveConfig':

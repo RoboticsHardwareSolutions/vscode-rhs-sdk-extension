@@ -1,0 +1,104 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "RPLC Configuration Schema",
+    "description": "JSON Schema for RPLC configuration templates",
+    "type": "object",
+    "required": ["name", "memory", "hal", "services", "tests", "compileDefinition"],
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "Name of the RPLC configuration"
+        },
+        "memory": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Memory size in KB"
+        },
+        "hal": {
+            "type": "object",
+            "description": "Hardware Abstraction Layer settings. For compact templates, include only enabled (true) properties. For full templates, include all properties with their actual values.",
+            "properties": {
+                "flash_ex": {
+                    "type": "boolean",
+                    "description": "Extended flash support"
+                },
+                "io": {
+                    "type": "boolean",
+                    "description": "I/O support"
+                },
+                "rtc": {
+                    "type": "boolean",
+                    "description": "Real-time clock support"
+                },
+                "serial": {
+                    "type": "boolean",
+                    "description": "Serial communication support"
+                },
+                "speaker": {
+                    "type": "boolean",
+                    "description": "Speaker support"
+                },
+                "can": {
+                    "type": "boolean",
+                    "description": "CAN bus support"
+                },
+                "random": {
+                    "type": "boolean",
+                    "description": "Random number generator support"
+                },
+                "usb": {
+                    "type": "boolean",
+                    "description": "USB support"
+                },
+                "network": {
+                    "type": "boolean",
+                    "description": "Network support"
+                }
+            },
+            "additionalProperties": false
+        },
+        "services": {
+            "type": "object",
+            "description": "Available services. For compact templates, include only enabled (true) properties. For full templates, include all properties with their actual values.",
+            "properties": {
+                "notification": {
+                    "type": "boolean",
+                    "description": "Notification service"
+                },
+                "lwip": {
+                    "type": "boolean",
+                    "description": "lwIP TCP/IP stack"
+                },
+                "can_open": {
+                    "type": "boolean",
+                    "description": "CANopen protocol support"
+                },
+                "usb_serial_bridge": {
+                    "type": "boolean",
+                    "description": "USB to serial bridge"
+                }
+            },
+            "additionalProperties": false
+        },
+        "tests": {
+            "type": "object",
+            "description": "Test configurations. For compact templates, include only enabled (true) properties. For full templates, include all properties with their actual values.",
+            "properties": {
+                "memmng": {
+                    "type": "boolean",
+                    "description": "Memory management tests"
+                },
+                "flash_ex": {
+                    "type": "boolean",
+                    "description": "Extended flash tests"
+                }
+            },
+            "additionalProperties": false
+        },
+        "compileDefinition": {
+            "type": "string",
+            "description": "Compile-time definition for the configuration"
+        }
+    },
+    "additionalProperties": false
+}

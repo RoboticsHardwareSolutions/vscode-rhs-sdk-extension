@@ -1,4 +1,6 @@
 const esbuild = require("esbuild");
+const fs = require("fs");
+const path = require("path");
 
 const production = process.argv.includes('--production');
 const watch = process.argv.includes('--watch');
@@ -23,6 +25,35 @@ const esbuildProblemMatcherPlugin = {
 	},
 };
 
+/**
+ * @type {import('esbuild').Plugin}
+ */
+const copyFilesPlugin = {
+	name: 'copy-files',
+	setup(build) {
+		build.onEnd(() => {
+			// Копируем JSON шаблоны в dist
+			const srcTemplatesDir = path.join(__dirname, 'src', 'templates');
+			const distTemplatesDir = path.join(__dirname, 'dist', 'templates');
+
+			if (!fs.existsSync(distTemplatesDir)) {
+				fs.mkdirSync(distTemplatesDir, { recursive: true });
+			}
+
+			// Копируем все JSON файлы
+			const files = fs.readdirSync(srcTemplatesDir);
+			files.forEach(file => {
+				if (file.endsWith('.json')) {
+					const srcFile = path.join(srcTemplatesDir, file);
+					const distFile = path.join(distTemplatesDir, file);
+					fs.copyFileSync(srcFile, distFile);
+					console.log(`Copied ${file} to dist/templates/`);
+				}
+			});
+		});
+	},
+};
+
 async function main() {
 	const ctx = await esbuild.context({
 		entryPoints: [
@@ -38,6 +69,7 @@ async function main() {
 		external: ['vscode'],
 		logLevel: 'silent',
 		plugins: [
+			copyFilesPlugin,
 			/* add to the end of plugins array */
 			esbuildProblemMatcherPlugin,
 		],
