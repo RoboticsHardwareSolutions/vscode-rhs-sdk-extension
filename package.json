@@ -2,18 +2,40 @@
   "name": "rhs-sdk",
   "displayName": "RHS SDK Tools",
   "description": "VS Code extension for BMPLC (BareMetal PLC) configuration management",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "publisher": "RoboticsHardwareSolutions",
+  "license": "MIT",
+  "homepage": "https://github.com/RoboticsHardwareSolutions/vscode-rhs-sdk-extension#readme",
+  "bugs": {
+    "url": "https://github.com/RoboticsHardwareSolutions/vscode-rhs-sdk-extension/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/RoboticsHardwareSolutions/vscode-rhs-sdk-extension.git"
   },
+  "keywords": [
+    "bmplc",
+    "baremetal",
+    "plc",
+    "configuration",
+    "embedded",
+    "hardware",
+    "robotics"
+  ],
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.74.0"
   },
   "categories": [
     "Other"
   ],
+  "activationEvents": [
+    "onCommand:rhs-sdk.tools.open",
+    "onView:rhs-sdk.tools"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -60,7 +82,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
-    "@types/vscode": "^1.100.0",
+    "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "@vscode/test-cli": "^0.0.10",
