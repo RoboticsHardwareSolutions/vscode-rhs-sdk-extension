@@ -1,26 +1,271 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Creator</title>
+    <title>BMPLC Configurator</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <div class="container">
-        <h1>Creator</h1>
-        <label for="RPLC_List">Choose a RPLC:</label>
-        <select id="RPLC_List" name="RPLC_List">
-            <option value="RPLC_M">RPLC_M</option>
-            <option value="RPLC_L">RPLC_L</option>
-            <option value="RPLC_XL">RPLC_XL</option>
-        </select>
-        <div id="output"></div>
+        <div class="preset-selector">
+            <h2>Select BMPLC Model</h2>
+            <select id="BMPLC_List">
+                <option value="">-- Select --</option>
+                <!-- Options will be added via JS -->
+            </select>
+
+            <div class="or-divider">
+                <span>OR</span>
+            </div>
+
+            <div class="new-config-section">
+                <h3>Create New Configuration</h3>
+                <div class="new-config-form">
+                    <div class="form-group">
+                        <label for="newConfigName">Configuration Name:</label>
+                        <input type="text" id="newConfigName" placeholder="MY_CUSTOM_BMPLC" />
+                    </div>
+                    <div class="form-group">
+                        <label for="newConfigMemory">Memory (KB):</label>
+                        <input type="number" id="newConfigMemory" value="512" min="256" max="4096" />
+                    </div>
+                    <button id="createNewButton" class="create-btn">Create New Configuration</button>
+                </div>
+            </div>
+
+            <div id="dynamicOptions">
+                <!-- Dynamic configuration options -->
+            </div>
+        </div>
+
+        <div class="preset-view" id="presetView">
+            <h2>Configuration Preview</h2>
+            <div id="presetContent">
+                <p>Please select a BMPLC model</p>
+            </div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        // Populate available BMPLC list
+        function populateBMPLCList(presets) {
+            const select = document.getElementById('BMPLC_List');
+            select.innerHTML = '<option value="">-- Select --</option>';
+            presets.forEach(preset => {
+                const option = document.createElement('option');
+                option.value = preset.name;
+                option.textContent = preset.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Selection change handler
+        document.getElementById('BMPLC_List').addEventListener('change', (event) => {
+            const selectedValue = event.target.value;
+            if (selectedValue) {
+                // Clear new config form
+                clearNewConfigForm();
+                
+                vscode.postMessage({
+                    command: 'bmplcListChanged',
+                    value: selectedValue
+                });
+            }
+        });
+
+        // New config creation handler
+        document.getElementById('createNewButton').addEventListener('click', () => {
+            const name = document.getElementById('newConfigName').value.trim();
+            const memory = parseInt(document.getElementById('newConfigMemory').value);
+
+            if (!name) {
+                alert('Please enter a configuration name');
+                return;
+            }
+
+            if (!memory || memory < 256) {
+                alert('Please enter a valid memory size (minimum 256 KB)');
+                return;
+            }
+
+            // Clear list selection
+            document.getElementById('BMPLC_List').value = '';
+
+            // Send command to create new config
+            vscode.postMessage({
+                command: 'createNewConfig',
+                name: name,
+                memory: memory
+            });
+        });
+
+        // Function to clear new config form
+        function clearNewConfigForm() {
+            document.getElementById('newConfigName').value = '';
+            document.getElementById('newConfigMemory').value = '512';
+        }
+
+        // Function to clean configuration - remove only empty objects
+        function cleanConfigForExport(config) {
+            const cleaned = JSON.parse(JSON.stringify(config)); // Deep copy
+            
+            function removeEmptyObjects(obj) {
+                for (const key in obj) {
+                    if (obj[key] && typeof obj[key] === 'object') {
+                        removeEmptyObjects(obj[key]);
+                        // Remove only empty objects
+                        if (Object.keys(obj[key]).length === 0) {
+                            delete obj[key];
+                        }
+                    }
+                }
+            }
+            
+            removeEmptyObjects(cleaned);
+            return cleaned;
+        }
+
+        // Update preset display
+        function updatePresetDisplay(preset) {
+            const presetContent = document.getElementById('presetContent');
+            
+            // Function to determine type and create corresponding element
+            const createInputForValue = (key, value) => {
+                const type = typeof value;
+                
+                if (type === 'boolean') {
+                    return `
+                        <select class="config-input" data-key="${key}">
+                            <option value="true" ${value === true ? 'selected' : ''}>true</option>
+                            <option value="false" ${value === false ? 'selected' : ''}>false</option>
+                        </select>
+                    `;
+                } else if (type === 'number') {
+                    return `<input type="number" class="config-input" data-key="${key}" value="${value}">`;
+                } else {
+                    return `<input type="text" class="config-input" data-key="${key}" value="${value}">`;
+                }
+            };
+
+            // Function for recursive creation of configuration elements
+            const createConfigControls = (config, prefix = '') => {
+                let controls = '';
+                
+                for (const [key, value] of Object.entries(config)) {
+                    if (key === 'name' || key === 'compileDefinition') {
+                        // Skip these fields in main configuration
+                        continue;
+                    }
+                    
+                    const fullKey = prefix ? `${prefix}.${key}` : key;
+                    
+                    if (value !== null && typeof value === 'object') {
+                        controls += `
+                            <div class="config-group">
+                                <h4>${key.toUpperCase()}</h4>
+                                ${createConfigControls(value, fullKey)}
+                            </div>
+                        `;
+                    } else {
+                        controls += `
+                            <div class="config-item">
+                                <label>${key}:</label>
+                                ${createInputForValue(fullKey, value)}
+                            </div>
+                        `;
+                    }
+                }
+                
+                return controls;
+            };
+
+            const isNewConfig = preset.name === 'BMPLC_TEMPLATE' || !preset.name.startsWith('BMPLC_');
+            
+            let html = `
+                <div class="preset">
+                    <h3>${isNewConfig ? 'New Configuration' : preset.name}</h3>
+                    <div class="config-item">
+                        <label>Name:</label>
+                        <input type="text" class="config-input" data-key="name" value="${preset.name}">
+                    </div>
+                    <div class="config-item">
+                        <label>Memory (KB):</label>
+                        <input type="number" class="config-input" data-key="memory" value="${preset.memory}" min="256" max="4096">
+                    </div>
+                    <div class="config-item">
+                        <label>Compile Definition:</label>
+                        <input type="text" class="config-input" data-key="compileDefinition" value="${preset.compileDefinition}">
+                    </div>
+                    
+                    <div class="config-section">
+                        <h4>Configuration Options</h4>
+                        ${createConfigControls(preset)}
+                        ${isNewConfig ? '<p class="hint">💡 <strong>Tip:</strong> Set options to <code>true</code> to enable them, or remove unused fields entirely from the final JSON.</p>' : ''}
+                    </div>
+                    
+                    <button class="save-btn">Save Configuration</button>
+                </div>
+            `;
+
+            presetContent.innerHTML = html;
+            
+            // Add save handler
+            presetContent.querySelector('.save-btn').addEventListener('click', () => {
+                const inputs = presetContent.querySelectorAll('.config-input');
+                const updatedConfig = {...preset};
+                
+                inputs.forEach(input => {
+                    const keys = input.dataset.key.split('.');
+                    let current = updatedConfig;
+                    
+                    for (let i = 0; i < keys.length - 1; i++) {
+                        current = current[keys[i]];
+                    }
+                    
+                    const lastKey = keys[keys.length - 1];
+                    current[lastKey] = input.type === 'select-one' 
+                        ? input.value === 'true' 
+                        : typeof current[lastKey] === 'number' 
+                            ? Number(input.value) 
+                            : input.value;
+                });
+                
+                // Create cleaned configuration (remove empty objects)
+                const cleanConfig = cleanConfigForExport(updatedConfig);
+                
+                console.log('Saving config:', cleanConfig);
+                
+                // Send command to save with repository cloning
+                vscode.postMessage({
+                    command: 'saveConfigToRepo',
+                    config: cleanConfig
+                });
+            });
+        }
+
+        // Update view when receiving new data
+        window.addEventListener('message', event => {
+            const message = event.data;
+
+            switch (message.command) {
+                case 'initialize':
+                    populateBMPLCList(message.presets);
+                    break;
+
+                case 'updatePresetView':
+                    updatePresetDisplay(message.preset);
+                    // updateDynamicOptions(message.preset);
+                    break;
+            }
+        });
+
+        // Request initial data on load
+        vscode.postMessage({ command: 'getInitialData' });
+    </script>
 </body>
 
 </html>

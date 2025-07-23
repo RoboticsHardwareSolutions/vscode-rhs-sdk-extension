@@ -1,5 +1,6 @@
-export interface RPLCConfig {
+export interface BMPLCConfig {
         name: string;
+        memory: number;
         hal: {
                 flash_ex?: boolean;
                 io?: boolean;
@@ -24,67 +25,5 @@ export interface RPLCConfig {
         compileDefinition: string;
 }
 
-export const RPLCs: RPLCConfig[] = [
-        {
-                name: "RPLC_XL",
-                hal: {
-                        flash_ex: true,
-                        io: true,
-                        rtc: true,
-                        serial: true,
-                        speaker: true,
-                        can: true,
-                        random: true,
-                        // network: true, // Uncomment if needed
-                },
-                services: {
-                        notification: true,
-                        lwip: true,
-                        can_open: true,
-                },
-                tests: {
-                        memmng: true,
-                        flash_ex: true,
-                },
-                compileDefinition: "RPLC_XL"
-        },
-        {
-                name: "RPLC_L",
-                hal: {
-                        flash_ex: true,
-                        io: true,
-                        rtc: true,
-                        serial: true,
-                        speaker: true,
-                        can: true,
-                        random: true,
-                },
-                services: {
-                        notification: true,
-                        can_open: true,
-                },
-                tests: {
-                        memmng: true,
-                        flash_ex: true,
-                },
-                compileDefinition: "RPLC_L"
-        },
-        {
-                name: "RPLC_M",
-                hal: {
-                        serial: true,
-                        speaker: true,
-                        can: true,
-                        usb: true,
-                },
-                services: {
-                        notification: true,
-                        usb_serial_bridge: true,
-                        can_open: true,
-                },
-                tests: {
-                        memmng: true,
-                },
-                compileDefinition: "RPLC_M"
-        }
-];
+// BMPLC configurations are now available through JSON templates in templates/ folder
+// Use: import { templates, getTemplate } from '../templates';

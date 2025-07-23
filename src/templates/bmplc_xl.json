@@ -1,0 +1,23 @@
+{
+    "name": "BMPLC_XL",
+    "memory": 2048,
+    "hal": {
+        "flash_ex": true,
+        "io": true,
+        "rtc": true,
+        "serial": true,
+        "speaker": true,
+        "can": true,
+        "random": true
+    },
+    "services": {
+        "notification": true,
+        "lwip": true,
+        "can_open": true
+    },
+    "tests": {
+        "memmng": true,
+        "flash_ex": true
+    },
+    "compileDefinition": "BMPLC_XL"
+}

@@ -1,0 +1,19 @@
+{
+    "name": "BMPLC_M",
+    "memory": 512,
+    "hal": {
+        "serial": true,
+        "speaker": true,
+        "can": true,
+        "usb": true
+    },
+    "services": {
+        "notification": true,
+        "usb_serial_bridge": true,
+        "can_open": true
+    },
+    "tests": {
+        "memmng": true
+    },
+    "compileDefinition": "BMPLC_M"
+}

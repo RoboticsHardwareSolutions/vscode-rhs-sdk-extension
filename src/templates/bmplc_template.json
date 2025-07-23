@@ -1,0 +1,26 @@
+{
+    "name": "BMPLC_TEMPLATE",
+    "memory": 256,
+    "hal": {
+        "flash_ex": false,
+        "io": false,
+        "rtc": false,
+        "serial": false,
+        "speaker": false,
+        "can": false,
+        "random": false,
+        "usb": false,
+        "network": false
+    },
+    "services": {
+        "notification": false,
+        "lwip": false,
+        "can_open": false,
+        "usb_serial_bridge": false
+    },
+    "tests": {
+        "memmng": false,
+        "flash_ex": false
+    },
+    "compileDefinition": "BMPLC_TEMPLATE"
+}
