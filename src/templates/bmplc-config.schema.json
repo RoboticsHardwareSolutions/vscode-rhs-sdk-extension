@@ -3,16 +3,16 @@
     "title": "BMPLC Configuration Schema",
     "description": "JSON Schema for BMPLC configuration templates",
     "type": "object",
-    "required": ["name", "memory", "hal", "services", "tests", "compileDefinition"],
+    "required": ["name", "microcontroller", "hal", "services", "tests", "compileDefinition"],
     "properties": {
         "name": {
             "type": "string",
             "description": "Name of the BMPLC configuration"
         },
-        "memory": {
-            "type": "number",
-            "minimum": 0,
-            "description": "Memory size in KB"
+        "microcontroller": {
+            "type": "string",
+            "enum": ["STM32F103RE", "STM32F765ZG", "STM32F407VG"],
+            "description": "Microcontroller type"
         },
         "hal": {
             "type": "object",

@@ -16,9 +16,10 @@ This directory contains JSON templates for various BMPLC (BareMetal PLC) configu
 
 ## File Structure
 
-- `bmplc_xl.json` - Ready BMPLC XL configuration (2048 KB) - only active components
-- `bmplc_l.json` - Ready BMPLC L configuration (1024 KB) - only active components  
-- `bmplc_m.json` - Ready BMPLC M configuration (512 KB) - only active components
+- `bmplc_xl.json` - Ready BMPLC XL configuration (STM32F765ZG) - only active components
+- `bmplc_l.json` - Ready BMPLC L configuration (STM32F765ZG) - only active components  
+- `bmplc_m.json` - Ready BMPLC M configuration (STM32F103RE) - only active components
+- `bmplc_industrial.json` - Industrial BMPLC configuration (STM32F765ZG) - full feature set with networking
 - `bmplc_template.json` - **Full template** with all possible fields for customization
 - `index.ts` - TypeScript module for working with templates
 - `bmplc-config.schema.json` - JSON Schema for validation
@@ -46,12 +47,12 @@ const fullTemplate = getTemplate('BMPLC_TEMPLATE');
 const myXLConfig = createConfigFromTemplate('BMPLC_XL', 'MY_CUSTOM_XL');
 
 // 4. Create new config with full set of functions for customization
-const customConfig = createFullConfig('MY_CUSTOM_BMPLC', 1024);
+const customConfig = createFullConfig('MY_CUSTOM_BMPLC', 'STM32F407VG');
 // After this user manually edits JSON
 
 // 5. Modify existing template
 const modifiedConfig = mergeConfigWithTemplate('BMPLC_L', {
-    memory: 1536,
+    microcontroller: 'STM32F407VG',
     hal: {
         network: true  // Add network to base BMPLC_L
     }
@@ -63,7 +64,7 @@ const modifiedConfig = mergeConfigWithTemplate('BMPLC_L', {
 ### 1. Create base with full set of functions
 ```typescript
 // Create config with all possible functions (all false)
-const newConfig = createFullConfig('MY_CUSTOM_BMPLC', 1024);
+const newConfig = createFullConfig('MY_CUSTOM_BMPLC', 'STM32F407VG');
 // Result contains ALL fields for customization
 ```
 
@@ -71,7 +72,7 @@ const newConfig = createFullConfig('MY_CUSTOM_BMPLC', 1024);
 ```json
 {
     "name": "MY_CUSTOM_BMPLC",
-    "memory": 1024,
+    "microcontroller": "STM32F407VG",
     "hal": {
         "flash_ex": false,    // ← Keep and change to true if needed
         "io": false,          // ← Keep and change to true if needed  
@@ -91,7 +92,7 @@ const newConfig = createFullConfig('MY_CUSTOM_BMPLC', 1024);
 ```json
 {
     "name": "MY_CUSTOM_BMPLC", 
-    "memory": 1024,
+    "microcontroller": "STM32F407VG",
     "hal": {
         "rtc": true,
         "serial": true,
@@ -110,7 +111,7 @@ JSON files can be used directly in any build systems or applications.
 Each template contains:
 
 - `name` - Configuration name
-- `memory` - Memory size in KB
+- `microcontroller` - Microcontroller type (STM32F103RE, STM32F765ZG, STM32F407VG)
 - `hal` - HAL (Hardware Abstraction Layer) settings - **only enabled components**
 - `services` - Enabled services - **only active services**
 - `tests` - Test settings - **only enabled tests**
@@ -125,9 +126,9 @@ Each template contains:
 
 ### Examples of differences between configurations
 
-**BMPLC_XL:** Full configuration with lwIP, flash_ex, io, rtc
-**BMPLC_L:** Without lwIP, but with other components  
-**BMPLC_M:** Minimal configuration only with USB, serial, speaker, CAN
+**BMPLC_XL:** Full configuration with lwIP, flash_ex, io, rtc (STM32F765ZG)
+**BMPLC_L:** Without lwIP, but with other components (STM32F765ZG)  
+**BMPLC_M:** Minimal configuration only with USB, serial, speaker, CAN (STM32F103RE)
 
 ## Creating new templates
 

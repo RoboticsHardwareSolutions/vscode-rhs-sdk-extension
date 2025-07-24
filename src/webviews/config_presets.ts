@@ -1,6 +1,6 @@
 export interface BMPLCConfig {
         name: string;
-        memory: number;
+        microcontroller: 'STM32F103RE' | 'STM32F765ZG' | 'STM32F407VG';
         hal: {
                 flash_ex?: boolean;
                 io?: boolean;

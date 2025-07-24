@@ -106,7 +106,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
                     break;
                 case 'createNewConfig':
 					try {
-						const fullConfig = createFullConfig(message.name || 'MY_CUSTOM_BMPLC', message.memory || 512);
+						const fullConfig = createFullConfig(message.name || 'MY_CUSTOM_BMPLC', message.microcontroller || 'STM32F407VG');
 						panel.webview.postMessage({
 							command: 'updatePresetView',
 							preset: fullConfig
@@ -324,7 +324,7 @@ function validateBMPLCConfig(filePath: string): boolean {
         const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
         // Check required BMPLC configuration fields
         return content.name && 
-               typeof content.memory === 'number' && 
+               content.microcontroller && 
                content.hal && 
                content.compileDefinition;
     } catch {

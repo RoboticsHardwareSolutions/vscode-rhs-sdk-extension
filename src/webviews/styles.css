@@ -195,6 +195,18 @@ button:hover {
     font-size: 13px;
 }
 
+.config-display {
+    padding: 6px 8px;
+    background: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    border: 1px solid var(--vscode-input-border);
+    border-radius: 2px;
+    font-size: 13px;
+    font-family: monospace;
+    display: inline-block;
+    min-width: 120px;
+}
+
 .save-btn {
     margin-top: 15px;
     background-color: var(--vscode-button-background);

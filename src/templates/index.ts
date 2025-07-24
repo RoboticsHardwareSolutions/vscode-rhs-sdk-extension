@@ -41,7 +41,7 @@ export function createConfigFromTemplate(templateName: string, customName?: stri
     };
 }
 
-export function createFullConfig(name: string, memory: number = 512): BMPLCConfig {
+export function createFullConfig(name: string, microcontroller: 'STM32F103RE' | 'STM32F765ZG' | 'STM32F407VG' = 'STM32F407VG'): BMPLCConfig {
     // Creates full configuration based on general template with all possible functions
     // User can enable needed ones (true) and remove unnecessary fields from JSON
     const template = getTemplate('BMPLC_TEMPLATE');
@@ -52,7 +52,7 @@ export function createFullConfig(name: string, memory: number = 512): BMPLCConfi
     return {
         ...template,
         name,
-        memory,
+        microcontroller,
         compileDefinition: name
     };
 }

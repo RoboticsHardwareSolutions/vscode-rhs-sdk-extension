@@ -1,6 +1,6 @@
 {
     "name": "BMPLC_TEMPLATE",
-    "memory": 256,
+    "microcontroller": "STM32F407VG",
     "hal": {
         "flash_ex": false,
         "io": false,

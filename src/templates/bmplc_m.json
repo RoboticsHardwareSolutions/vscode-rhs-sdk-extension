@@ -1,6 +1,6 @@
 {
     "name": "BMPLC_M",
-    "memory": 512,
+    "microcontroller": "STM32F103RE",
     "hal": {
         "serial": true,
         "speaker": true,

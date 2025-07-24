@@ -99,7 +99,15 @@
             const createInputForValue = (key, value) => {
                 const type = typeof value;
                 
-                if (type === 'boolean') {
+                if (key === 'microcontroller') {
+                    return `
+                        <select class="config-input" data-key="${key}">
+                            <option value="STM32F407VG" ${value === 'STM32F407VG' ? 'selected' : ''}>STM32F407VG</option>
+                            <option value="STM32F103RE" ${value === 'STM32F103RE' ? 'selected' : ''}>STM32F103RE</option>
+                            <option value="STM32F765ZG" ${value === 'STM32F765ZG' ? 'selected' : ''}>STM32F765ZG</option>
+                        </select>
+                    `;
+                } else if (type === 'boolean') {
                     return `
                         <select class="config-input" data-key="${key}">
                             <option value="true" ${value === true ? 'selected' : ''}>true</option>
@@ -118,7 +126,7 @@
                 let controls = '';
                 
                 for (const [key, value] of Object.entries(config)) {
-                    if (key === 'name' || key === 'compileDefinition') {
+                    if (key === 'name' || key === 'compileDefinition' || key === 'microcontroller') {
                         // Skip these fields in main configuration
                         continue;
                     }
@@ -153,8 +161,12 @@
                         <input type="text" class="config-input" data-key="name" value="${preset.name}">
                     </div>
                     <div class="config-item">
-                        <label>Memory (KB):</label>
-                        <input type="number" class="config-input" data-key="memory" value="${preset.memory}" min="256" max="4096">
+                        <label>Microcontroller:</label>
+                        <select class="config-input" data-key="microcontroller">
+                            <option value="STM32F407VG" ${preset.microcontroller === 'STM32F407VG' ? 'selected' : ''}>STM32F407VG</option>
+                            <option value="STM32F103RE" ${preset.microcontroller === 'STM32F103RE' ? 'selected' : ''}>STM32F103RE</option>
+                            <option value="STM32F765ZG" ${preset.microcontroller === 'STM32F765ZG' ? 'selected' : ''}>STM32F765ZG</option>
+                        </select>
                     </div>
                     <div class="config-item">
                         <label>Compile Definition:</label>

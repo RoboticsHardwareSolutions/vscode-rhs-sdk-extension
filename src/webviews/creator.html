@@ -28,8 +28,12 @@
                         <input type="text" id="newConfigName" placeholder="MY_CUSTOM_BMPLC" />
                     </div>
                     <div class="form-group">
-                        <label for="newConfigMemory">Memory (KB):</label>
-                        <input type="number" id="newConfigMemory" value="512" min="256" max="4096" />
+                        <label for="newConfigMicrocontroller">Microcontroller:</label>
+                        <select id="newConfigMicrocontroller">
+                            <option value="STM32F407VG">STM32F407VG</option>
+                            <option value="STM32F103RE">STM32F103RE</option>
+                            <option value="STM32F765ZG">STM32F765ZG</option>
+                        </select>
                     </div>
                     <button id="createNewButton" class="create-btn">Create New Configuration</button>
                 </div>
@@ -80,15 +84,15 @@
         // New config creation handler
         document.getElementById('createNewButton').addEventListener('click', () => {
             const name = document.getElementById('newConfigName').value.trim();
-            const memory = parseInt(document.getElementById('newConfigMemory').value);
+            const microcontroller = document.getElementById('newConfigMicrocontroller').value;
 
             if (!name) {
                 alert('Please enter a configuration name');
                 return;
             }
 
-            if (!memory || memory < 256) {
-                alert('Please enter a valid memory size (minimum 256 KB)');
+            if (!microcontroller) {
+                alert('Please select a microcontroller');
                 return;
             }
 
@@ -99,14 +103,14 @@
             vscode.postMessage({
                 command: 'createNewConfig',
                 name: name,
-                memory: memory
+                microcontroller: microcontroller
             });
         });
 
         // Function to clear new config form
         function clearNewConfigForm() {
             document.getElementById('newConfigName').value = '';
-            document.getElementById('newConfigMemory').value = '512';
+            document.getElementById('newConfigMicrocontroller').value = 'STM32F407VG';
         }
 
         // Function to clean configuration - remove only empty objects
@@ -156,7 +160,7 @@
                 let controls = '';
                 
                 for (const [key, value] of Object.entries(config)) {
-                    if (key === 'name' || key === 'compileDefinition') {
+                    if (key === 'name' || key === 'compileDefinition' || key === 'microcontroller') {
                         // Skip these fields in main configuration
                         continue;
                     }
@@ -193,8 +197,8 @@
                         <input type="text" class="config-input" data-key="name" value="${preset.name}">
                     </div>
                     <div class="config-item">
-                        <label>Memory (KB):</label>
-                        <input type="number" class="config-input" data-key="memory" value="${preset.memory}" min="256" max="4096">
+                        <label>Microcontroller:</label>
+                        <span class="config-display">${preset.microcontroller}</span>
                     </div>
                     <div class="config-item">
                         <label>Compile Definition:</label>
