@@ -125,6 +125,18 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 						vscode.window.showErrorMessage('Error saving config to repository');
 					}
 					break;
+				case 'saveConfigToWorkspace':
+					try {
+						await saveConfigToWorkspace(message.config);
+					} catch (error) {
+						console.error('Error saving config to workspace:', error);
+						vscode.window.showErrorMessage('Error saving config to workspace');
+					}
+					break;
+				case 'openCreator':
+					// Open creator from editor when no configs found
+					openHtmlPage(context, 'creator');
+					break;
                 case 'saveConfig':
                     // Handle configuration saving to existing file
                     try {
@@ -306,6 +318,56 @@ async function saveConfigToRepository(config: any) {
     } catch (error) {
         console.error('Error cloning repository or saving config:', error);
         vscode.window.showErrorMessage(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+async function saveConfigToWorkspace(config: any) {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+        vscode.window.showErrorMessage('No workspace folder is currently open.');
+        return;
+    }
+
+    const workspacePath = workspaceFolders[0].uri.fsPath;
+    const configFilePath = path.join(workspacePath, 'bmplc_config.json');
+
+    try {
+        // Check if config file already exists
+        if (fs.existsSync(configFilePath)) {
+            const choice = await vscode.window.showWarningMessage(
+                'A BMPLC configuration file already exists in this workspace. Do you want to overwrite it?',
+                'Overwrite', 'Cancel'
+            );
+            
+            if (choice !== 'Overwrite') {
+                return;
+            }
+        }
+
+        // Save configuration to workspace
+        fs.writeFileSync(configFilePath, JSON.stringify(config, null, 2));
+        
+        vscode.window.showInformationMessage(
+            `Configuration saved to ${path.basename(configFilePath)} in current workspace.`
+        );
+
+        // Offer to open the editor
+        const choice = await vscode.window.showInformationMessage(
+            'Configuration created successfully! Open in editor?',
+            'Open Editor', 'Close'
+        );
+
+        if (choice === 'Open Editor') {
+            // Small delay to ensure file is written
+            setTimeout(() => {
+                vscode.commands.executeCommand('rhs-sdk.tools.open', 'editor');
+            }, 500);
+        }
+
+    } catch (error) {
+        console.error('Error saving config to workspace:', error);
+        vscode.window.showErrorMessage(`Error saving configuration: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 }
 

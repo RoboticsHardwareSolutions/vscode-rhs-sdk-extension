@@ -51,7 +51,7 @@
             noConfig: {
                 title: 'No BMPLC configuration found',
                 description: 'No <code>bmplc_config.json</code> file was found in the current workspace.',
-                hint: 'Use the <strong>Creator</strong> tool to create a new configuration.'
+                hint: 'Create a new configuration to get started with your BMPLC project.'
             },
             loading: 'Loading configuration...',
             noConfigAvailable: 'No configuration available to edit'
@@ -309,8 +309,18 @@
                             <h3>${CONFIG_MESSAGES.noConfig.title}</h3>
                             <p>${CONFIG_MESSAGES.noConfig.description}</p>
                             <p>${CONFIG_MESSAGES.noConfig.hint}</p>
+                            <button class="create-config-btn" id="createConfigBtn">Create New Configuration</button>
                         </div>
                     `;
+                    
+                    // Setup create config button handler
+                    const createBtn = document.getElementById('createConfigBtn');
+                    if (createBtn) {
+                        createBtn.addEventListener('click', () => {
+                            vscode.postMessage({ command: 'openCreator' });
+                        });
+                    }
+                    
                     document.getElementById('presetContent').innerHTML = `<p>${CONFIG_MESSAGES.noConfigAvailable}</p>`;
                     return;
                 }

@@ -211,14 +211,19 @@
                         ${isNewConfig ? '<p class="hint">💡 <strong>Tip:</strong> Set options to <code>true</code> to enable them, or remove unused fields entirely from the final JSON.</p>' : ''}
                     </div>
                     
-                    <button class="save-btn">Save Configuration</button>
+                    <div class="save-options">
+                        <h4>Save Configuration</h4>
+                        <button class="save-workspace-btn">Save to Current Workspace</button>
+                        <div class="or-divider"><span>OR</span></div>
+                        <button class="save-repo-btn">Clone Repository & Save</button>
+                    </div>
                 </div>
             `;
 
             presetContent.innerHTML = html;
             
-            // Add save handler
-            presetContent.querySelector('.save-btn').addEventListener('click', () => {
+            // Helper function to collect updated config
+            const collectUpdatedConfig = () => {
                 const inputs = presetContent.querySelectorAll('.config-input');
                 const updatedConfig = {...preset};
                 
@@ -238,17 +243,38 @@
                             : input.value;
                 });
                 
-                // Create cleaned configuration (remove empty objects)
-                const cleanConfig = cleanConfigForExport(updatedConfig);
-                
-                console.log('Saving config:', cleanConfig);
-                
-                // Send command to save with repository cloning
-                vscode.postMessage({
-                    command: 'saveConfigToRepo',
-                    config: cleanConfig
+                return cleanConfigForExport(updatedConfig);
+            };
+            
+            // Add save to workspace handler
+            const saveWorkspaceBtn = presetContent.querySelector('.save-workspace-btn');
+            if (saveWorkspaceBtn) {
+                saveWorkspaceBtn.addEventListener('click', () => {
+                    const cleanConfig = collectUpdatedConfig();
+                    
+                    console.log('Saving config to workspace:', cleanConfig);
+                    
+                    vscode.postMessage({
+                        command: 'saveConfigToWorkspace',
+                        config: cleanConfig
+                    });
                 });
-            });
+            }
+            
+            // Add save to repository handler
+            const saveRepoBtn = presetContent.querySelector('.save-repo-btn');
+            if (saveRepoBtn) {
+                saveRepoBtn.addEventListener('click', () => {
+                    const cleanConfig = collectUpdatedConfig();
+                    
+                    console.log('Saving config to repository:', cleanConfig);
+                    
+                    vscode.postMessage({
+                        command: 'saveConfigToRepo',
+                        config: cleanConfig
+                    });
+                });
+            }
         }
 
         // Update view when receiving new data
