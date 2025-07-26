@@ -166,6 +166,53 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
                         vscode.window.showErrorMessage('Error saving configuration');
                     }
                     break;
+                case 'updateTabTitle':
+                    // Update webview panel title to show dirty state
+                    if (message.isDirty) {
+                        panel.title = `● ${pageName}`;
+                    } else {
+                        panel.title = pageName;
+                    }
+                    break;
+                case 'getInitialData':
+                    // Handle initial data request for editor
+                    if (pageName === 'editor') {
+                        const workspaceFolders = vscode.workspace.workspaceFolders;
+                        if (workspaceFolders) {
+                            const foundConfigs: Array<{ path: string, config: BMPLCConfig }> = [];
+                            
+                            for (const folder of workspaceFolders) {
+                                const configPaths = findBMPLCConfigs(folder.uri.fsPath);
+                                for (const configPath of configPaths) {
+                                    try {
+                                        const configContent = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                                        foundConfigs.push({
+                                            path: configPath,
+                                            config: configContent
+                                        });
+                                    } catch (error) {
+                                        // Skip invalid configs
+                                    }
+                                }
+                            }
+                            
+                            panel.webview.postMessage({
+                                command: 'initialize',
+                                pageType: 'editor',
+                                configs: foundConfigs,
+                                workspacePath: workspaceFolders[0].uri.fsPath
+                            });
+                        }
+                    } else {
+                        // For creator page
+                        panel.webview.postMessage({
+                            command: 'initialize',
+                            pageType: 'creator',
+                            configs: [],
+                            workspacePath: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || ''
+                        });
+                    }
+                    break;
             }
         },
         undefined,

@@ -2,7 +2,7 @@
   "name": "rhs-sdk",
   "displayName": "RHS SDK Tools",
   "description": "VS Code extension for BMPLC (BareMetal PLC) configuration management",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "RoboticsHardwareSolutions",
   "license": "MIT",
   "icon": "src/media/icon.png",

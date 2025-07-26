@@ -2,6 +2,28 @@
 
 All notable changes to the "RHS SDK Tools" extension will be documented in this file.
 
+## [0.0.5] - 2025-07-26
+
+### Enhanced
+- **Improved BMPLC Configuration Editor**
+  - Enhanced user experience with better change detection
+  - Added automatic tab title updates to indicate unsaved changes
+  - Improved form validation and input handling
+  - Better error handling and user feedback
+  - Enhanced configuration preview and editing interface
+
+### Fixed
+- Fixed configuration input handling for different data types
+- Improved boolean field detection and conversion
+- Better handling of nested configuration objects
+- Enhanced save functionality with proper state management
+
+### Technical
+- Improved JavaScript architecture in editor.html
+- Better separation of concerns with modular functions
+- Enhanced state management for configuration changes
+- Improved event handling and user interactions
+
 ## [0.0.4] - 2025-07-24
 
 ### Breaking Changes

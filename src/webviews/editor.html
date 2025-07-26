@@ -31,104 +31,162 @@
 
     <script>
         const vscode = acquireVsCodeApi();
-        let foundConfigs = [];
+        
+        // Application state
+        const state = {
+            foundConfigs: [],
+            originalConfig: null,
+            hasUnsavedChanges: false,
+            currentConfigPath: null
+        };
 
-        // Display configuration info and auto-load first config
-        function displayConfigInfo(configs) {
-            const configInfo = document.getElementById('configInfo');
-            
-            if (configs.length === 0) {
-                configInfo.innerHTML = `
-                    <div class="no-configs">
-                        <h3>No BMPLC configuration found</h3>
-                        <p>No <code>bmplc_config.json</code> file was found in the current workspace.</p>
-                        <p>Use the <strong>Creator</strong> tool to create a new configuration.</p>
-                    </div>
-                `;
-                document.getElementById('presetContent').innerHTML = '<p>No configuration available to edit</p>';
-                return;
-            }
+        // Constants
+        const MICROCONTROLLER_OPTIONS = [
+            { value: 'STM32F407VG', label: 'STM32F407VG' },
+            { value: 'STM32F103RE', label: 'STM32F103RE' },
+            { value: 'STM32F765ZG', label: 'STM32F765ZG' }
+        ];
 
-            // Store configs for later use
-            foundConfigs = configs;
-            
-            // Display info about the found configuration
-            const config = configs[0]; // Take the first (and should be only) config
-            const relativePath = config.path.split('/').pop(); // Get just filename
-            
-            configInfo.innerHTML = `
-                <div class="config-found">
-                    <h3>Editing Configuration</h3>
-                    <div class="config-file-info">
-                        <span class="config-name">${config.config.name}</span>
-                        <span class="config-memory">${config.config.memory} KB</span>
-                    </div>
-                    <div class="config-path">File: ${relativePath}</div>
-                </div>
-            `;
-            
-            // Automatically load the configuration for editing
-            updatePresetDisplay(config.config, config.path);
-        }
+        const CONFIG_MESSAGES = {
+            noConfig: {
+                title: 'No BMPLC configuration found',
+                description: 'No <code>bmplc_config.json</code> file was found in the current workspace.',
+                hint: 'Use the <strong>Creator</strong> tool to create a new configuration.'
+            },
+            loading: 'Loading configuration...',
+            noConfigAvailable: 'No configuration available to edit'
+        };
 
-        // Function to clean configuration - remove only empty objects
-        function cleanConfigForExport(config) {
-            const cleaned = JSON.parse(JSON.stringify(config)); // Deep copy
+        // Utility functions
+        const utils = {
+            deepCopy: (obj) => JSON.parse(JSON.stringify(obj)),
             
-            function removeEmptyObjects(obj) {
-                for (const key in obj) {
-                    if (obj[key] && typeof obj[key] === 'object') {
-                        removeEmptyObjects(obj[key]);
-                        // Remove only empty objects
-                        if (Object.keys(obj[key]).length === 0) {
-                            delete obj[key];
-                        }
-                    }
+            isEmptyObject: (obj) => Object.keys(obj).length === 0,
+            
+            navigateToValue: (obj, keys) => {
+                let current = obj;
+                for (const key of keys) {
+                    current = current[key];
+                }
+                return current;
+            },
+            
+            isBooleanField: (input) => {
+                if (input.type !== 'select-one') return false;
+                const options = Array.from(input.options).map(opt => opt.value);
+                return options.length === 2 && options.includes('true') && options.includes('false');
+            },
+            
+            convertInputValue: (input, originalValue) => {
+                if (input.type === 'select-one') {
+                    return utils.isBooleanField(input) 
+                        ? input.value === 'true' 
+                        : input.value;
+                } else if (typeof originalValue === 'number') {
+                    return Number(input.value);
+                } else {
+                    return input.value;
                 }
             }
-            
-            removeEmptyObjects(cleaned);
-            return cleaned;
-        }
+        };
 
-        // Update preset display
-        function updatePresetDisplay(preset, configPath) {
-            const presetContent = document.getElementById('presetContent');
-            
-            // Function to determine type and create corresponding element
-            const createInputForValue = (key, value) => {
+        // Document title management
+        const titleManager = {
+            update: (hasChanges = false) => {
+                const baseTitle = 'BMPLC Configuration Editor';
+                const newTitle = hasChanges ? `● ${baseTitle}` : baseTitle;
+                document.title = newTitle;
+                
+                // Notify VS Code about the dirty state
+                vscode.setState({ isDirty: hasChanges });
+                
+                // Send message to extension to update tab title
+                vscode.postMessage({
+                    command: 'updateTabTitle',
+                    title: newTitle,
+                    isDirty: hasChanges
+                });
+            }
+        };
+
+        // Change detection system
+        const changeDetector = {
+            check: () => {
+                if (!state.originalConfig) return false;
+                
+                const inputs = document.querySelectorAll('.config-input');
+                
+                for (const input of inputs) {
+                    const keys = input.dataset.key.split('.');
+                    const originalValue = utils.navigateToValue(state.originalConfig, keys);
+                    const currentValue = utils.convertInputValue(input, originalValue);
+                    
+                    if (currentValue !== originalValue) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            },
+
+            setup: () => {
+                const inputs = document.querySelectorAll('.config-input');
+                
+                const handleChange = () => {
+                    const hasChanges = changeDetector.check();
+                    
+                    if (hasChanges !== state.hasUnsavedChanges) {
+                        state.hasUnsavedChanges = hasChanges;
+                        titleManager.update(state.hasUnsavedChanges);
+                    }
+                };
+                
+                inputs.forEach(input => {
+                    input.addEventListener('input', handleChange);
+                    input.addEventListener('change', handleChange);
+                });
+            }
+        };
+
+        // HTML generation utilities
+        const htmlGenerator = {
+            createMicrocontrollerSelect: (key, value) => {
+                const options = MICROCONTROLLER_OPTIONS.map(option => 
+                    `<option value="${option.value}" ${value === option.value ? 'selected' : ''}>${option.label}</option>`
+                ).join('');
+                
+                return `<select class="config-input" data-key="${key}">${options}</select>`;
+            },
+
+            createBooleanSelect: (key, value) => {
+                return `
+                    <select class="config-input" data-key="${key}">
+                        <option value="true" ${value === true ? 'selected' : ''}>true</option>
+                        <option value="false" ${value === false ? 'selected' : ''}>false</option>
+                    </select>
+                `;
+            },
+
+            createInputForValue: (key, value) => {
                 const type = typeof value;
                 
                 if (key === 'microcontroller') {
-                    return `
-                        <select class="config-input" data-key="${key}">
-                            <option value="STM32F407VG" ${value === 'STM32F407VG' ? 'selected' : ''}>STM32F407VG</option>
-                            <option value="STM32F103RE" ${value === 'STM32F103RE' ? 'selected' : ''}>STM32F103RE</option>
-                            <option value="STM32F765ZG" ${value === 'STM32F765ZG' ? 'selected' : ''}>STM32F765ZG</option>
-                        </select>
-                    `;
+                    return htmlGenerator.createMicrocontrollerSelect(key, value);
                 } else if (type === 'boolean') {
-                    return `
-                        <select class="config-input" data-key="${key}">
-                            <option value="true" ${value === true ? 'selected' : ''}>true</option>
-                            <option value="false" ${value === false ? 'selected' : ''}>false</option>
-                        </select>
-                    `;
+                    return htmlGenerator.createBooleanSelect(key, value);
                 } else if (type === 'number') {
                     return `<input type="number" class="config-input" data-key="${key}" value="${value}">`;
                 } else {
                     return `<input type="text" class="config-input" data-key="${key}" value="${value}">`;
                 }
-            };
+            },
 
-            // Function for recursive creation of configuration elements
-            const createConfigControls = (config, prefix = '') => {
+            createConfigControls: (config, prefix = '') => {
                 let controls = '';
                 
                 for (const [key, value] of Object.entries(config)) {
-                    if (key === 'name' || key === 'compileDefinition' || key === 'microcontroller') {
-                        // Skip these fields in main configuration
-                        continue;
+                    if (['name', 'compileDefinition', 'microcontroller'].includes(key)) {
+                        continue; // Skip main fields
                     }
                     
                     const fullKey = prefix ? `${prefix}.${key}` : key;
@@ -137,112 +195,234 @@
                         controls += `
                             <div class="config-group">
                                 <h4>${key.toUpperCase()}</h4>
-                                ${createConfigControls(value, fullKey)}
+                                ${htmlGenerator.createConfigControls(value, fullKey)}
                             </div>
                         `;
                     } else {
                         controls += `
                             <div class="config-item">
                                 <label>${key}:</label>
-                                ${createInputForValue(fullKey, value)}
+                                ${htmlGenerator.createInputForValue(fullKey, value)}
                             </div>
                         `;
                     }
                 }
                 
                 return controls;
-            };
-            
-            let html = `
-                <div class="preset">
-                    <h3>Configuration</h3>
-                    <div class="config-item">
-                        <label>Name:</label>
-                        <input type="text" class="config-input" data-key="name" value="${preset.name}">
-                    </div>
-                    <div class="config-item">
-                        <label>Microcontroller:</label>
-                        <select class="config-input" data-key="microcontroller">
-                            <option value="STM32F407VG" ${preset.microcontroller === 'STM32F407VG' ? 'selected' : ''}>STM32F407VG</option>
-                            <option value="STM32F103RE" ${preset.microcontroller === 'STM32F103RE' ? 'selected' : ''}>STM32F103RE</option>
-                            <option value="STM32F765ZG" ${preset.microcontroller === 'STM32F765ZG' ? 'selected' : ''}>STM32F765ZG</option>
-                        </select>
-                    </div>
-                    <div class="config-item">
-                        <label>Compile Definition:</label>
-                        <input type="text" class="config-input" data-key="compileDefinition" value="${preset.compileDefinition}">
-                    </div>
-                    
-                    <div class="config-section">
-                        <h4>Configuration Options</h4>
-                        ${createConfigControls(preset)}
-                        <p class="hint">💡 <strong>Tip:</strong> Set options to <code>true</code> to enable them, or remove unused fields entirely from the final JSON.</p>
-                    </div>
-                    
-                    <button class="save-btn">Save Configuration to File</button>
-                </div>
-            `;
+            },
 
-            presetContent.innerHTML = html;
-            
-            // Add save handler
-            presetContent.querySelector('.save-btn').addEventListener('click', () => {
-                const inputs = presetContent.querySelectorAll('.config-input');
-                const updatedConfig = {...preset};
+            createConfigEditor: (preset) => {
+                return `
+                    <div class="preset">
+                        <h3>Configuration</h3>
+                        <div class="config-item">
+                            <label>Name:</label>
+                            <input type="text" class="config-input" data-key="name" value="${preset.name}">
+                        </div>
+                        <div class="config-item">
+                            <label>Microcontroller:</label>
+                            ${htmlGenerator.createMicrocontrollerSelect('microcontroller', preset.microcontroller)}
+                        </div>
+                        <div class="config-item">
+                            <label>Compile Definition:</label>
+                            <input type="text" class="config-input" data-key="compileDefinition" value="${preset.compileDefinition}">
+                        </div>
+                        
+                        <div class="config-section">
+                            <h4>Configuration Options</h4>
+                            ${htmlGenerator.createConfigControls(preset)}
+                            <p class="hint">💡 <strong>Tip:</strong> Set options to <code>true</code> to enable them, or remove unused fields entirely from the final JSON.</p>
+                        </div>
+                        
+                        <button class="save-btn">Save Configuration to File</button>
+                    </div>
+                `;
+            }
+        };
+
+        // Configuration management
+        const configManager = {
+            clean: (config) => {
+                const cleaned = utils.deepCopy(config);
+                
+                function removeEmptyObjects(obj) {
+                    for (const key in obj) {
+                        if (obj[key] && typeof obj[key] === 'object') {
+                            removeEmptyObjects(obj[key]);
+                            if (utils.isEmptyObject(obj[key])) {
+                                delete obj[key];
+                            }
+                        }
+                    }
+                }
+                
+                removeEmptyObjects(cleaned);
+                return cleaned;
+            },
+
+            collectFromInputs: (baseConfig) => {
+                const inputs = document.querySelectorAll('.config-input');
+                const updatedConfig = utils.deepCopy(baseConfig);
                 
                 inputs.forEach(input => {
                     const keys = input.dataset.key.split('.');
                     let current = updatedConfig;
                     
+                    // Navigate to parent object
                     for (let i = 0; i < keys.length - 1; i++) {
                         current = current[keys[i]];
                     }
                     
                     const lastKey = keys[keys.length - 1];
-                    current[lastKey] = input.type === 'select-one' 
-                        ? input.value === 'true' 
-                        : typeof current[lastKey] === 'number' 
-                            ? Number(input.value) 
-                            : input.value;
+                    const originalValue = utils.navigateToValue(state.originalConfig, keys);
+                    current[lastKey] = utils.convertInputValue(input, originalValue);
                 });
                 
-                // Create cleaned configuration (remove empty objects)
-                const cleanConfig = cleanConfigForExport(updatedConfig);
+                return updatedConfig;
+            },
+
+            save: (config) => {
+                const cleanConfig = configManager.clean(config);
                 
-                console.log('Saving config:', cleanConfig);
+                // Update state
+                state.originalConfig = utils.deepCopy(cleanConfig);
+                state.hasUnsavedChanges = false;
+                titleManager.update(false);
                 
-                // Send command to save to existing file
+                // Send save command
                 vscode.postMessage({
                     command: 'saveConfig',
                     config: cleanConfig,
-                    filePath: configPath
+                    filePath: state.currentConfigPath
                 });
-            });
+            }
+        };
+
+        // UI management
+        const ui = {
+            displayConfigInfo: (configs) => {
+                const configInfo = document.getElementById('configInfo');
+                
+                if (configs.length === 0) {
+                    configInfo.innerHTML = `
+                        <div class="no-configs">
+                            <h3>${CONFIG_MESSAGES.noConfig.title}</h3>
+                            <p>${CONFIG_MESSAGES.noConfig.description}</p>
+                            <p>${CONFIG_MESSAGES.noConfig.hint}</p>
+                        </div>
+                    `;
+                    document.getElementById('presetContent').innerHTML = `<p>${CONFIG_MESSAGES.noConfigAvailable}</p>`;
+                    return;
+                }
+
+                // Store configs for later use
+                state.foundConfigs = configs;
+                
+                // Display info about the found configuration
+                const config = configs[0];
+                const relativePath = config.path.split('/').pop();
+                
+                configInfo.innerHTML = `
+                    <div class="config-found">
+                        <h3>Editing Configuration</h3>
+                        <div class="config-file-info">
+                            <span class="config-name">${config.config.name}</span>
+                            <span class="config-memory">${config.config.memory} KB</span>
+                        </div>
+                        <div class="config-path">File: ${relativePath}</div>
+                    </div>
+                `;
+                
+                ui.updatePresetDisplay(config.config, config.path);
+            },
+
+            updatePresetDisplay: (preset, configPath) => {
+                const presetContent = document.getElementById('presetContent');
+                
+                // Update state
+                state.originalConfig = utils.deepCopy(preset);
+                state.hasUnsavedChanges = false;
+                state.currentConfigPath = configPath;
+                titleManager.update(false);
+                
+                // Generate and set HTML
+                presetContent.innerHTML = htmlGenerator.createConfigEditor(preset);
+                
+                // Setup save handler
+                ui.setupSaveHandler(preset);
+                
+                // Setup change detection after content is loaded
+                setTimeout(() => {
+                    changeDetector.setup();
+                }, 100);
+            },
+
+            setupSaveHandler: (preset) => {
+                const saveBtn = document.querySelector('.save-btn');
+                if (!saveBtn) return;
+                
+                saveBtn.addEventListener('click', () => {
+                    const updatedConfig = configManager.collectFromInputs(preset);
+                    configManager.save(updatedConfig);
+                });
+            }
+        };
+
+        // Event handlers
+        const eventHandlers = {
+            handleMessage: (event) => {
+                const message = event.data;
+
+                switch (message.command) {
+                    case 'initialize':
+                        if (message.pageType === 'editor') {
+                            ui.displayConfigInfo(message.configs);
+                        }
+                        break;
+
+                    case 'updatePresetView':
+                        ui.updatePresetDisplay(message.preset, message.filePath || 'Unknown');
+                        break;
+                        
+                    case 'refreshConfigs':
+                        ui.displayConfigInfo(message.configs);
+                        break;
+                }
+            },
+
+            handleKeydown: (event) => {
+                if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                    event.preventDefault();
+                    
+                    const saveBtn = document.querySelector('.save-btn');
+                    if (saveBtn) {
+                        saveBtn.click();
+                    }
+                }
+            },
+
+            handleBeforeUnload: (event) => {
+                if (state.hasUnsavedChanges) {
+                    event.preventDefault();
+                    event.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+                    return 'You have unsaved changes. Are you sure you want to leave?';
+                }
+            }
+        };
+
+        // Initialize application
+        function init() {
+            // Setup event listeners
+            window.addEventListener('message', eventHandlers.handleMessage);
+            document.addEventListener('keydown', eventHandlers.handleKeydown);
+            window.addEventListener('beforeunload', eventHandlers.handleBeforeUnload);
+            
+            // Request initial data
+            vscode.postMessage({ command: 'getInitialData' });
         }
 
-        // Update view when receiving new data
-        window.addEventListener('message', event => {
-            const message = event.data;
-
-            switch (message.command) {
-                case 'initialize':
-                    if (message.pageType === 'editor') {
-                        displayConfigInfo(message.configs);
-                    }
-                    break;
-
-                case 'updatePresetView':
-                    updatePresetDisplay(message.preset, message.filePath || 'Unknown');
-                    break;
-                    
-                case 'refreshConfigs':
-                    displayConfigInfo(message.configs);
-                    break;
-            }
-        });
-
-        // Request initial data on load
-        vscode.postMessage({ command: 'getInitialData' });
+        // Start the application
+        init();
     </script>
 </body>
 
