@@ -48,8 +48,8 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
     // panel.webview.html = getWebviewContent(context, panel);
     
     // Initialize different pages with different data
-    if (pageName === 'editor') {
-        // For editor, find and send existing configurations
+    if (pageName === 'config-manager') {
+        // For config-manager, find and send existing configurations
         const workspaceFolders = vscode.workspace.workspaceFolders;
         const foundConfigs: Array<{ path: string, config: BMPLCConfig }> = [];
         
@@ -70,17 +70,19 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
             }
         }
         
+        // Send both config data and presets for the unified interface
         panel.webview.postMessage({
             command: 'initialize',
-            pageType: 'editor',
+            pageType: 'config-manager',
             configs: foundConfigs,
+            presets: Object.values(templates).filter(template => template.name !== 'BMPLC_TEMPLATE'),
             workspacePath: workspaceFolders?.[0]?.uri.fsPath || ''
         });
     } else {
-        // For creator, send templates
+        // For other pages, send templates (legacy support)
         panel.webview.postMessage({
             command: 'initialize',
-            pageType: 'creator',
+            pageType: pageName,
             presets: Object.values(templates).filter(template => template.name !== 'BMPLC_TEMPLATE')
         });
     }
@@ -134,10 +136,6 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 						vscode.window.showErrorMessage('Error saving config to workspace');
 					}
 					break;
-				case 'openCreator':
-					// Open creator from editor when no configs found
-					openHtmlPage(context, 'creator');
-					break;
                 case 'saveConfig':
                     // Handle configuration saving to existing file
                     try {
@@ -145,8 +143,8 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
                             fs.writeFileSync(message.filePath, JSON.stringify(message.config, null, 2), 'utf-8');
                             vscode.window.showInformationMessage(`Configuration saved to ${path.basename(message.filePath)}`);
                             
-                            // Refresh the editor to show updated config
-                            if (panel.title === 'editor') {
+                            // Refresh the config-manager to show updated config
+                            if (panel.title === 'config-manager') {
                                 const workspaceFolders = vscode.workspace.workspaceFolders;
                                 if (workspaceFolders) {
                                     const foundConfigs: Array<{ path: string, config: BMPLCConfig }> = [];
@@ -179,6 +177,121 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
                         vscode.window.showErrorMessage('Error saving configuration');
                     }
                     break;
+                case 'saveNewConfig':
+                    // Handle saving new configuration with workspace detection
+                    try {
+                        const workspaceFolders = vscode.workspace.workspaceFolders;
+                        
+                        // Check if we have workspace folders OR if there's a root path (single folder open)
+                        const hasWorkspace = (workspaceFolders && workspaceFolders.length > 0) || 
+                                           vscode.workspace.rootPath ||
+                                           vscode.workspace.workspaceFile;
+                        
+                        if (hasWorkspace) {
+                            // We have a workspace or open folder, save to workspace
+                            await saveConfigToWorkspace(message.config);
+                        } else {
+                            // No workspace, ask user to select parent directory for new project
+                            const folderUri = await vscode.window.showOpenDialog({
+                                canSelectFolders: true,
+                                canSelectFiles: false,
+                                canSelectMany: false,
+                                openLabel: 'Select parent directory for new BMPLC project',
+                                title: 'Choose where to create new BMPLC project'
+                            });
+                            
+                            if (folderUri && folderUri[0]) {
+                                // Create project structure
+                                const parentPath = folderUri[0].fsPath;
+                                const projectName = message.config.name || 'BMPLC_Project';
+                                const projectPath = path.join(parentPath, projectName);
+                                
+                                try {
+                                    // Check if project directory already exists
+                                    if (fs.existsSync(projectPath)) {
+                                        const choice = await vscode.window.showWarningMessage(
+                                            `A directory named "${projectName}" already exists. Do you want to overwrite it?`,
+                                            'Overwrite', 'Cancel'
+                                        );
+                                        
+                                        if (choice !== 'Overwrite') {
+                                            return;
+                                        }
+                                        
+                                        // Remove existing directory
+                                        fs.rmSync(projectPath, { recursive: true, force: true });
+                                    }
+                                    
+                                    // Create project directory
+                                    fs.mkdirSync(projectPath, { recursive: true });
+                                    
+                                    // Clone project template repository
+                                    const repoUrl = 'https://github.com/RoboticsHardwareSolutions/RPLC_Quick_Project.git';
+                                    
+                                    await vscode.window.withProgress({
+                                        location: vscode.ProgressLocation.Notification,
+                                        title: "Creating BMPLC project",
+                                        cancellable: false
+                                    }, async (progress) => {
+                                        progress.report({ message: "Cloning project template..." });
+                                        
+                                        // Clone repository into temporary directory first
+                                        const tempDir = path.join(parentPath, `${projectName}_temp`);
+                                        await execAsync(`git clone --recursive ${repoUrl} "${tempDir}"`);
+                                        
+                                        progress.report({ message: "Setting up project structure..." });
+                                        
+                                        // Move contents from temp directory to project directory
+                                        const tempContents = fs.readdirSync(tempDir);
+                                        for (const item of tempContents) {
+                                            const sourcePath = path.join(tempDir, item);
+                                            const targetPath = path.join(projectPath, item);
+                                            
+                                            if (fs.statSync(sourcePath).isDirectory()) {
+                                                // Copy directory recursively
+                                                await copyDirectory(sourcePath, targetPath);
+                                            } else {
+                                                // Copy file
+                                                fs.copyFileSync(sourcePath, targetPath);
+                                            }
+                                        }
+                                        
+                                        // Remove temporary directory
+                                        fs.rmSync(tempDir, { recursive: true, force: true });
+                                        
+                                        progress.report({ message: "Saving configuration..." });
+                                        
+                                        // Save BMPLC configuration to project
+                                        const configFilePath = path.join(projectPath, 'bmplc_config.json');
+                                        fs.writeFileSync(configFilePath, JSON.stringify(message.config, null, 2));
+                                        
+                                        progress.report({ message: "Project created successfully!" });
+                                    });
+                                    
+                                    vscode.window.showInformationMessage(
+                                        `BMPLC project "${projectName}" created successfully at ${projectPath}`
+                                    );
+                                    
+                                    // Ask if user wants to open this project as workspace
+                                    const openWorkspace = await vscode.window.showInformationMessage(
+                                        'Project created successfully! Do you want to open this project as a workspace?',
+                                        'Open Project', 'No Thanks'
+                                    );
+                                    
+                                    if (openWorkspace === 'Open Project') {
+                                        vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(projectPath), false);
+                                    }
+                                } catch (error) {
+                                    console.error('Error creating BMPLC project:', error);
+                                    vscode.window.showErrorMessage('Error creating BMPLC project: ' + error.message);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error saving new config:', error);
+                        vscode.window.showErrorMessage('Error saving new configuration');
+                    }
+                    break;
                 case 'updateTabTitle':
                     // Update webview panel title to show dirty state
                     if (message.isDirty) {
@@ -188,12 +301,15 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
                     }
                     break;
                 case 'getInitialData':
-                    // Handle initial data request for editor
-                    if (pageName === 'editor') {
+                    // Handle initial data request for config-manager
+                    if (pageName === 'config-manager') {
                         const workspaceFolders = vscode.workspace.workspaceFolders;
-                        if (workspaceFolders) {
-                            const foundConfigs: Array<{ path: string, config: BMPLCConfig }> = [];
-                            
+                        const foundConfigs: Array<{ path: string, config: BMPLCConfig }> = [];
+                        let workspacePath: string | undefined;
+                        
+                        // Check workspace folders first
+                        if (workspaceFolders && workspaceFolders.length > 0) {
+                            workspacePath = workspaceFolders[0].uri.fsPath;
                             for (const folder of workspaceFolders) {
                                 const configPaths = findBMPLCConfigs(folder.uri.fsPath);
                                 for (const configPath of configPaths) {
@@ -208,19 +324,35 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
                                     }
                                 }
                             }
-                            
-                            panel.webview.postMessage({
-                                command: 'initialize',
-                                pageType: 'editor',
-                                configs: foundConfigs,
-                                workspacePath: workspaceFolders[0].uri.fsPath
-                            });
+                        } else if (vscode.workspace.rootPath) {
+                            // Fallback to rootPath for single folder open
+                            workspacePath = vscode.workspace.rootPath;
+                            const configPaths = findBMPLCConfigs(workspacePath);
+                            for (const configPath of configPaths) {
+                                try {
+                                    const configContent = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+                                    foundConfigs.push({
+                                        path: configPath,
+                                        config: configContent
+                                    });
+                                } catch (error) {
+                                    // Skip invalid configs
+                                }
+                            }
                         }
-                    } else {
-                        // For creator page
+                        
                         panel.webview.postMessage({
                             command: 'initialize',
-                            pageType: 'creator',
+                            pageType: 'config-manager',
+                            configs: foundConfigs,
+                            presets: Object.values(templates).filter(template => template.name !== 'BMPLC_TEMPLATE'),
+                            workspacePath: workspacePath
+                        });
+                    } else {
+                        // For other pages
+                        panel.webview.postMessage({
+                            command: 'initialize',
+                            pageType: pageName,
                             presets: Object.values(templates).filter(template => template.name !== 'BMPLC_TEMPLATE')
                         });
                     }
@@ -266,7 +398,7 @@ function openHtmlPage(context: vscode.ExtensionContext, pageName: string) {
 }
 
 async function saveConfigToRepository(config: any) {
-    const repoUrl = 'https://github.com/RoboticsHardwareSolutions/BMPLC_Quick_Project.git';
+    const repoUrl = 'https://github.com/RoboticsHardwareSolutions/RPLC_Quick_Project.git';
     
     // Show folder selection dialog
     const folderUri = await vscode.window.showOpenDialog({
@@ -281,7 +413,7 @@ async function saveConfigToRepository(config: any) {
     }
 
     const targetPath = folderUri[0].fsPath;
-    const projectName = 'BMPLC_Quick_Project';
+    const projectName = 'RPLC_Quick_Project';
     const projectPath = path.join(targetPath, projectName);
 
     try {
@@ -323,13 +455,19 @@ async function saveConfigToRepository(config: any) {
 
 async function saveConfigToWorkspace(config: any): Promise<boolean> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
+    let workspacePath: string | undefined;
     
-    if (!workspaceFolders || workspaceFolders.length === 0) {
+    // Try to get workspace path from different sources
+    if (workspaceFolders && workspaceFolders.length > 0) {
+        workspacePath = workspaceFolders[0].uri.fsPath;
+    } else if (vscode.workspace.rootPath) {
+        // For single folder open (deprecated but still works)
+        workspacePath = vscode.workspace.rootPath;
+    } else {
         vscode.window.showErrorMessage('No workspace folder is currently open.');
         return false;
     }
 
-    const workspacePath = workspaceFolders[0].uri.fsPath;
     const configFilePath = path.join(workspacePath, 'bmplc_config.json');
 
     try {
@@ -352,11 +490,11 @@ async function saveConfigToWorkspace(config: any): Promise<boolean> {
             `Configuration saved to ${path.basename(configFilePath)} in current workspace.`
         );
 
-        // Auto-refresh editor if it's open, or open it if not
+        // Auto-refresh config-manager if it's open, or open it if not
         setTimeout(() => {
-            const editorPanel = openPanels['editor'];
-            if (editorPanel) {
-                // Refresh existing editor and switch to it
+            const configManagerPanel = openPanels['config-manager'];
+            if (configManagerPanel) {
+                // Refresh existing config-manager and switch to it
                 const workspaceFolders = vscode.workspace.workspaceFolders;
                 if (workspaceFolders) {
                     const foundConfigs: Array<{ path: string, config: BMPLCConfig }> = [];
@@ -376,18 +514,18 @@ async function saveConfigToWorkspace(config: any): Promise<boolean> {
                         }
                     }
                     
-                    editorPanel.webview.postMessage({
+                    configManagerPanel.webview.postMessage({
                         command: 'refreshConfigs',
                         configs: foundConfigs,
                         workspacePath: workspaceFolders[0].uri.fsPath
                     });
                     
-                    // Switch to editor panel
-                    editorPanel.reveal();
+                    // Switch to config-manager panel
+                    configManagerPanel.reveal();
                 }
             } else {
-                // Open new editor
-                vscode.commands.executeCommand('rhs-sdk.tools.open', 'editor');
+                // Open new config-manager
+                vscode.commands.executeCommand('rhs-sdk.tools.open', 'config-manager');
             }
         }, 500);
 
@@ -412,15 +550,10 @@ class ToolsProvider implements vscode.TreeDataProvider<ToolItem> {
             return Promise.resolve([]);
         } else {
             return Promise.resolve([
-                new ToolItem('Creator', 'creator', {
+                new ToolItem('Config Manager', 'config-manager', {
                     command: 'rhs-sdk.tools.open',
                     title: '',
-                    arguments: ['creator']
-                }),
-                new ToolItem('Editor', 'editor', {
-                    command: 'rhs-sdk.tools.open',
-                    title: '',
-                    arguments: ['editor']
+                    arguments: ['config-manager']
                 })
             ]);
         }
@@ -539,3 +672,32 @@ function findBMPLCConfigs(workspacePath: string): string[] {
 //         }
 //     }
 // }
+
+// Helper function to copy directory recursively
+async function copyDirectory(source: string, target: string): Promise<void> {
+    try {
+        // Create target directory if it doesn't exist
+        if (!fs.existsSync(target)) {
+            fs.mkdirSync(target, { recursive: true });
+        }
+        
+        const items = fs.readdirSync(source);
+        
+        for (const item of items) {
+            const sourcePath = path.join(source, item);
+            const targetPath = path.join(target, item);
+            const stat = fs.statSync(sourcePath);
+            
+            if (stat.isDirectory()) {
+                // Recursively copy subdirectory
+                await copyDirectory(sourcePath, targetPath);
+            } else {
+                // Copy file
+                fs.copyFileSync(sourcePath, targetPath);
+            }
+        }
+    } catch (error) {
+        console.error('Error copying directory:', error);
+        throw error;
+    }
+}

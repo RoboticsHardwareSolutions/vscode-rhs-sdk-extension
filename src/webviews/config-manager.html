@@ -4,16 +4,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMPLC Configuration Editor</title>
+    <title>BMPLC Configuration Manager</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <div class="container">
         <div class="preset-selector">
-            <h2>BMPLC Configuration Editor</h2>
+            <h2>BMPLC Configuration Manager</h2>
             <div id="configInfo" class="config-info-display">
                 <div class="loading">Searching for BMPLC configuration...</div>
+            </div>
+
+            <!-- Creator section for new configurations -->
+            <div id="creatorSection" class="creator-section" style="display: none;">
+                <h3>Create New Configuration</h3>
+                <select id="BMPLC_List">
+                    <option value="">-- Select Template --</option>
+                    <!-- Options will be added via JS -->
+                </select>
+
+                <div class="or-divider">
+                    <span>OR</span>
+                </div>
+
+                <div class="new-config-section">
+                    <h4>Create Custom Configuration</h4>
+                    <div class="new-config-form">
+                        <div class="form-group">
+                            <label for="newConfigName">Configuration Name:</label>
+                            <input type="text" id="newConfigName" placeholder="MY_CUSTOM_BMPLC" />
+                        </div>
+                        <div class="form-group">
+                            <label for="newConfigMicrocontroller">Microcontroller:</label>
+                            <select id="newConfigMicrocontroller">
+                                <option value="STM32F407VG">STM32F407VG</option>
+                                <option value="STM32F103RE">STM32F103RE</option>
+                                <option value="STM32F765ZG">STM32F765ZG</option>
+                            </select>
+                        </div>
+                        <button id="createNewButton" class="create-btn">Create New Configuration</button>
+                    </div>
+                </div>
             </div>
 
             <div id="dynamicOptions">
@@ -37,7 +69,9 @@
             foundConfigs: [],
             originalConfig: null,
             hasUnsavedChanges: false,
-            currentConfigPath: null
+            currentConfigPath: null,
+            mode: 'edit', // 'edit' or 'create'
+            availablePresets: []
         };
 
         // Constants
@@ -93,7 +127,7 @@
         // Document title management
         const titleManager = {
             update: (hasChanges = false) => {
-                const baseTitle = 'BMPLC Configuration Editor';
+                const baseTitle = 'BMPLC Configuration Manager';
                 const newTitle = hasChanges ? `● ${baseTitle}` : baseTitle;
                 document.title = newTitle;
                 
@@ -212,9 +246,14 @@
             },
 
             createConfigEditor: (preset) => {
+                const isCreateMode = state.mode === 'create';
+                const saveHint = isCreateMode 
+                    ? '💡 <strong>Tip:</strong> This is a new configuration. Use <kbd>Ctrl+S</kbd> to save it to your workspace or create a new BMPLC project.'
+                    : '💡 <strong>Tip:</strong> Set options to <code>true</code> to enable them, or remove unused fields entirely from the final JSON. Use <kbd>Ctrl+S</kbd> to save.';
+                
                 return `
                     <div class="preset">
-                        <h3>Configuration</h3>
+                        <h3>${isCreateMode ? 'New Configuration' : 'Configuration'}</h3>
                         <div class="config-item">
                             <label>Name:</label>
                             <input type="text" class="config-input" data-key="name" value="${preset.name}">
@@ -231,17 +270,115 @@
                         <div class="config-section">
                             <h4>Configuration Options</h4>
                             ${htmlGenerator.createConfigControls(preset)}
-                            <p class="hint">💡 <strong>Tip:</strong> Set options to <code>true</code> to enable them, or remove unused fields entirely from the final JSON.</p>
+                            <p class="hint">${saveHint}</p>
                         </div>
-                        
-                        <button class="save-btn">Save Configuration to File</button>
                     </div>
                 `;
             }
         };
 
+        // Creator functionality
+        const creatorManager = {
+            populateBMPLCList: (presets) => {
+                const select = document.getElementById('BMPLC_List');
+                if (!select) return;
+                
+                select.innerHTML = '<option value="">-- Select Template --</option>';
+                presets.forEach(preset => {
+                    const option = document.createElement('option');
+                    option.value = preset.name;
+                    option.textContent = preset.name;
+                    select.appendChild(option);
+                });
+                
+                state.availablePresets = presets;
+            },
+
+            clearNewConfigForm: () => {
+                const nameInput = document.getElementById('newConfigName');
+                const microSelect = document.getElementById('newConfigMicrocontroller');
+                if (nameInput) nameInput.value = '';
+                if (microSelect) microSelect.value = 'STM32F407VG';
+            },
+
+            setupEventListeners: () => {
+                // Template selection handler
+                const bmplcList = document.getElementById('BMPLC_List');
+                if (bmplcList) {
+                    bmplcList.addEventListener('change', (event) => {
+                        const selectedValue = event.target.value;
+                        if (selectedValue) {
+                            creatorManager.clearNewConfigForm();
+                            
+                            vscode.postMessage({
+                                command: 'bmplcListChanged',
+                                value: selectedValue
+                            });
+                        }
+                    });
+                }
+
+                // New config creation handler
+                const createBtn = document.getElementById('createNewButton');
+                if (createBtn) {
+                    createBtn.addEventListener('click', () => {
+                        const nameInput = document.getElementById('newConfigName');
+                        const microSelect = document.getElementById('newConfigMicrocontroller');
+                        
+                        if (!nameInput || !microSelect) return;
+                        
+                        const name = nameInput.value.trim();
+                        const microcontroller = microSelect.value;
+
+                        if (!name) {
+                            alert('Please enter a configuration name');
+                            return;
+                        }
+
+                        if (!microcontroller) {
+                            alert('Please select a microcontroller');
+                            return;
+                        }
+
+                        // Clear list selection
+                        const bmplcList = document.getElementById('BMPLC_List');
+                        if (bmplcList) bmplcList.value = '';
+
+                        // Send command to create new config
+                        vscode.postMessage({
+                            command: 'createNewConfig',
+                            name: name,
+                            microcontroller: microcontroller
+                        });
+                    });
+                }
+            },
+
+            showCreatorSection: () => {
+                const creatorSection = document.getElementById('creatorSection');
+                if (creatorSection) {
+                    creatorSection.style.display = 'block';
+                }
+                state.mode = 'create';
+            },
+
+            hideCreatorSection: () => {
+                const creatorSection = document.getElementById('creatorSection');
+                if (creatorSection) {
+                    creatorSection.style.display = 'none';
+                }
+                state.mode = 'edit';
+            }
+        };
+
         // Configuration management
         const configManager = {
+            getCurrentPreset: () => {
+                // Get current preset from inputs or original config
+                if (!state.originalConfig) return null;
+                return configManager.collectFromInputs(state.originalConfig);
+            },
+
             clean: (config) => {
                 const cleaned = utils.deepCopy(config);
                 
@@ -284,16 +421,42 @@
             save: (config) => {
                 const cleanConfig = configManager.clean(config);
                 
-                // Update state
-                state.originalConfig = utils.deepCopy(cleanConfig);
+                // Update state to show changes are saved
                 state.hasUnsavedChanges = false;
                 titleManager.update(false);
                 
-                // Send save command
+                // Send appropriate save command based on mode
+                if (state.mode === 'create') {
+                    // Return the config for create mode - actual saving handled by extension
+                    return cleanConfig;
+                } else {
+                    // Update original config for edit mode
+                    state.originalConfig = utils.deepCopy(cleanConfig);
+                    
+                    // Send save command for edit mode
+                    vscode.postMessage({
+                        command: 'saveConfig',
+                        config: cleanConfig,
+                        filePath: state.currentConfigPath
+                    });
+                }
+            },
+
+            saveToWorkspace: (config) => {
+                const cleanConfig = configManager.clean(config);
+                
                 vscode.postMessage({
-                    command: 'saveConfig',
-                    config: cleanConfig,
-                    filePath: state.currentConfigPath
+                    command: 'saveConfigToWorkspace',
+                    config: cleanConfig
+                });
+            },
+
+            saveToRepository: (config) => {
+                const cleanConfig = configManager.clean(config);
+                
+                vscode.postMessage({
+                    command: 'saveConfigToRepo',
+                    config: cleanConfig
                 });
             }
         };
@@ -304,26 +467,13 @@
                 const configInfo = document.getElementById('configInfo');
                 
                 if (configs.length === 0) {
-                    configInfo.innerHTML = `
-                        <div class="no-configs">
-                            <h3>${CONFIG_MESSAGES.noConfig.title}</h3>
-                            <p>${CONFIG_MESSAGES.noConfig.description}</p>
-                            <p>${CONFIG_MESSAGES.noConfig.hint}</p>
-                            <button class="create-config-btn" id="createConfigBtn">Create New Configuration</button>
-                        </div>
-                    `;
-                    
-                    // Setup create config button handler
-                    const createBtn = document.getElementById('createConfigBtn');
-                    if (createBtn) {
-                        createBtn.addEventListener('click', () => {
-                            vscode.postMessage({ command: 'openCreator' });
-                        });
-                    }
-                    
-                    document.getElementById('presetContent').innerHTML = `<p>${CONFIG_MESSAGES.noConfigAvailable}</p>`;
+                    // Automatically switch to creator mode when no configs found
+                    ui.switchToCreatorMode();
                     return;
                 }
+
+                // Hide creator section when configs are found
+                creatorManager.hideCreatorSection();
 
                 // Store configs for later use
                 state.foundConfigs = configs;
@@ -337,13 +487,77 @@
                         <h3>Editing Configuration</h3>
                         <div class="config-file-info">
                             <span class="config-name">${config.config.name}</span>
-                            <span class="config-memory">${config.config.memory} KB</span>
+                            <span class="config-memory">${config.config.microcontroller}</span>
                         </div>
                         <div class="config-path">File: ${relativePath}</div>
+                        <button class="switch-to-creator-btn" id="switchToCreatorBtn">Create New Configuration</button>
                     </div>
                 `;
                 
+                // Setup switch to creator button
+                const switchBtn = document.getElementById('switchToCreatorBtn');
+                if (switchBtn) {
+                    switchBtn.addEventListener('click', () => {
+                        ui.switchToCreatorMode();
+                    });
+                }
+                
                 ui.updatePresetDisplay(config.config, config.path);
+            },
+
+            switchToCreatorMode: () => {
+                // Show creator section
+                creatorManager.showCreatorSection();
+                
+                // Update config info section
+                const configInfo = document.getElementById('configInfo');
+                const hasExistingConfigs = state.foundConfigs.length > 0;
+                
+                if (hasExistingConfigs) {
+                    configInfo.innerHTML = `
+                        <div class="creator-mode">
+                            <h3>Create New Configuration</h3>
+                            <p>Choose from available templates or create a custom configuration.</p>
+                            <button class="back-to-editor-btn" id="backToEditorBtn">Back to Editor</button>
+                        </div>
+                    `;
+                    
+                    // Setup back to editor button
+                    const backBtn = document.getElementById('backToEditorBtn');
+                    if (backBtn) {
+                        backBtn.addEventListener('click', () => {
+                            ui.switchToEditMode();
+                        });
+                    }
+                } else {
+                    // No existing configs - show welcome message
+                    configInfo.innerHTML = `
+                        <div class="creator-mode">
+                            <h3>Welcome to BMPLC Configuration Manager</h3>
+                            <p>No configuration files found in the current workspace.</p>
+                            <p>Create your first BMPLC configuration to get started!</p>
+                        </div>
+                    `;
+                }
+                
+                // Setup creator event listeners
+                creatorManager.setupEventListeners();
+                
+                // Populate templates if available
+                if (state.availablePresets.length > 0) {
+                    creatorManager.populateBMPLCList(state.availablePresets);
+                }
+                
+                // Clear preview
+                document.getElementById('presetContent').innerHTML = `<p>Please select a template or create a custom configuration</p>`;
+            },
+
+            switchToEditMode: () => {
+                // Hide creator section
+                creatorManager.hideCreatorSection();
+                
+                // Display existing configs
+                ui.displayConfigInfo(state.foundConfigs);
             },
 
             updatePresetDisplay: (preset, configPath) => {
@@ -351,9 +565,16 @@
                 
                 // Update state
                 state.originalConfig = utils.deepCopy(preset);
-                state.hasUnsavedChanges = false;
                 state.currentConfigPath = configPath;
-                titleManager.update(false);
+                
+                // For create mode, mark as having unsaved changes to show the asterisk
+                if (state.mode === 'create') {
+                    state.hasUnsavedChanges = true;
+                    titleManager.update(true);
+                } else {
+                    state.hasUnsavedChanges = false;
+                    titleManager.update(false);
+                }
                 
                 // Generate and set HTML
                 presetContent.innerHTML = htmlGenerator.createConfigEditor(preset);
@@ -368,13 +589,8 @@
             },
 
             setupSaveHandler: (preset) => {
-                const saveBtn = document.querySelector('.save-btn');
-                if (!saveBtn) return;
-                
-                saveBtn.addEventListener('click', () => {
-                    const updatedConfig = configManager.collectFromInputs(preset);
-                    configManager.save(updatedConfig);
-                });
+                // Save handler is now handled through Ctrl+S in handleKeydown
+                // No need to setup button handlers
             }
         };
 
@@ -385,17 +601,33 @@
 
                 switch (message.command) {
                     case 'initialize':
-                        if (message.pageType === 'editor') {
+                        if (message.pageType === 'config-manager') {
+                            // Store presets for creator functionality
+                            state.availablePresets = message.presets || [];
                             ui.displayConfigInfo(message.configs);
+                        } else if (message.pageType === 'creator') {
+                            // Initialize creator mode
+                            state.availablePresets = message.presets || [];
+                            ui.switchToCreatorMode();
                         }
                         break;
 
                     case 'updatePresetView':
-                        ui.updatePresetDisplay(message.preset, message.filePath || 'Unknown');
+                        state.mode = 'create'; // Switch to create mode when showing preset
+                        ui.updatePresetDisplay(message.preset, message.filePath || 'New');
                         break;
                         
                     case 'refreshConfigs':
                         ui.displayConfigInfo(message.configs);
+                        break;
+                        
+                    // Creator-specific message handlers
+                    case 'bmplcListChanged':
+                        // This is handled by the creator section
+                        break;
+                        
+                    case 'createNewConfig':
+                        // This is handled by the creator section
                         break;
                 }
             },
@@ -404,9 +636,20 @@
                 if ((event.ctrlKey || event.metaKey) && event.key === 's') {
                     event.preventDefault();
                     
-                    const saveBtn = document.querySelector('.save-btn');
-                    if (saveBtn) {
-                        saveBtn.click();
+                    const currentPreset = configManager.getCurrentPreset();
+                    if (!currentPreset) return;
+                    
+                    const updatedConfig = configManager.collectFromInputs(currentPreset);
+                    
+                    if (state.mode === 'create') {
+                        // For create mode, check if we're in workspace and offer appropriate save options
+                        vscode.postMessage({
+                            command: 'saveNewConfig',
+                            config: updatedConfig
+                        });
+                    } else {
+                        // For edit mode, save to current location
+                        configManager.save(updatedConfig);
                     }
                 }
             },

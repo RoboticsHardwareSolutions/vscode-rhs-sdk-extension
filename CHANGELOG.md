@@ -2,6 +2,41 @@
 
 All notable changes to the "RHS SDK Tools" extension will be documented in this file.
 
+## [0.0.7] - 2025-07-26
+
+### Major Feature Update
+- **Unified Configuration Manager Interface**
+  - Combined editor and creator functionality into single config-manager tool
+  - Automatic mode detection: creator mode when no configs found, editor mode when configs exist
+  - Streamlined user experience with intelligent interface switching
+
+### Enhanced Save Workflow
+- **Keyboard-driven Save Operations**
+  - Replaced save buttons with Ctrl+S keyboard shortcuts for native VS Code experience
+  - Added visual indicators (asterisk in tab title) for unsaved changes
+  - Automatic change detection and dirty state management
+
+### Improved Project Creation
+- **Enhanced Repository Cloning**
+  - Restored full project template cloning from RPLC_Quick_Project repository
+  - Intelligent workspace detection with multiple fallback strategies
+  - Automatic project structure setup with proper git repository cloning
+  - Support for both workspace folders and single folder scenarios
+
+### Fixed
+- Fixed Ctrl+S functionality for saving configurations
+- Improved workspace detection for various VS Code scenarios
+- Fixed asterisk display for new configuration creation
+- Corrected repository URLs from BMPLC to RPLC naming convention
+- Enhanced error handling for project creation workflow
+
+### Technical
+- Major refactoring from separate editor/creator to unified config-manager
+- Improved state management and message handling
+- Enhanced git integration with recursive repository cloning
+- Better file system operations with directory copying utilities
+- Streamlined TypeScript architecture with unified interface logic
+
 ## [0.0.6] - 2025-07-26
 
 ### Enhanced
